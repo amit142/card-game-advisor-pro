@@ -17,20 +17,22 @@ const PositionSelector = ({ position, onPositionChange }: PositionSelectorProps)
   ];
 
   return (
-    <div className="space-y-2">
-      <div className="text-xs text-slate-400">Position: {position || 'None'}</div>
+    <div className="space-y-3">
+      <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+        Position: {position || 'None'}
+      </div>
       
-      <div className="grid grid-cols-3 gap-1">
+      <div className="grid grid-cols-3 gap-2">
         {positions.map(pos => (
           <Button
             key={pos.name}
-            variant={position === pos.name ? "default" : "ghost"}
+            variant={position === pos.name ? "default" : "outline"}
             size="sm"
             onClick={() => onPositionChange(pos.name)}
-            className={`h-8 text-xs ${
+            className={`h-10 text-xs font-medium rounded-lg transition-all duration-200 ${
               position === pos.name 
-                ? "bg-blue-600 hover:bg-blue-700 text-white" 
-                : "text-slate-400 hover:text-white hover:bg-slate-800"
+                ? "bg-blue-500 hover:bg-blue-600 text-white shadow-md border-0" 
+                : "bg-white hover:bg-gray-50 text-gray-700 border-gray-200 hover:border-gray-300"
             }`}
             title={pos.fullName}
           >

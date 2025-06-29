@@ -51,21 +51,21 @@ const GameStage = ({ gameState, onGameStateChange }: GameStageProps) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Stage Selector */}
-      <div className="space-y-2">
-        <div className="text-sm text-slate-300">Board</div>
-        <div className="flex gap-1">
+      <div className="space-y-3">
+        <div className="text-sm font-semibold text-gray-700">Board</div>
+        <div className="flex gap-2">
           {stages.map(stage => (
             <Button
               key={stage.name}
-              variant={gameState.gameStage === stage.name ? "default" : "ghost"}
+              variant={gameState.gameStage === stage.name ? "default" : "outline"}
               size="sm"
               onClick={() => setGameStage(stage.name as any)}
-              className={`h-8 text-xs ${
+              className={`h-10 text-xs font-medium rounded-lg transition-all duration-200 flex-1 ${
                 gameState.gameStage === stage.name 
-                  ? "bg-blue-600 hover:bg-blue-700 text-white" 
-                  : "text-slate-400 hover:text-white hover:bg-slate-800"
+                  ? "bg-blue-500 hover:bg-blue-600 text-white shadow-md border-0" 
+                  : "bg-white hover:bg-gray-50 text-gray-700 border-gray-200 hover:border-gray-300"
               }`}
             >
               {stage.label}
@@ -85,7 +85,7 @@ const GameStage = ({ gameState, onGameStateChange }: GameStageProps) => {
       )}
 
       {gameState.gameStage === 'preflop' && (
-        <div className="text-center text-slate-500 py-4 text-sm">
+        <div className="text-center text-gray-400 py-6 text-sm font-medium">
           No community cards yet
         </div>
       )}
