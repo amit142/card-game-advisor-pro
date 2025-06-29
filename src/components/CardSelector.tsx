@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Plus, X } from 'lucide-react';
 
 interface CardSelectorProps {
   selectedCards: string[];
@@ -16,7 +17,7 @@ const CardSelector = ({ selectedCards, onCardsChange, maxCards, label }: CardSel
   const [showSelector, setShowSelector] = useState(false);
 
   const getSuitColor = (suit: string) => {
-    return suit === '♥' || suit === '♦' ? 'text-red-500' : 'text-black';
+    return suit === '♥' || suit === '♦' ? 'text-red-400' : 'text-slate-200';
   };
 
   const getCardNotation = (rank: string, suit: string) => {
@@ -46,80 +47,92 @@ const CardSelector = ({ selectedCards, onCardsChange, maxCards, label }: CardSel
   };
 
   return (
-    <div className="space-y-4">
-      <p className="text-green-100 text-sm">{label}</p>
+    <div className="space-y-3">
+      {label && <div className="text-xs text-slate-400">{label}</div>}
       
       {/* Selected Cards Display */}
-      <div className="flex gap-2 min-h-[80px] items-center">
+      <div className="flex gap-2">
         {selectedCards.map(cardNotation => {
           const { rank, suit } = parseCard(cardNotation);
           return (
             <div
               key={cardNotation}
-              className="bg-white rounded-lg p-3 shadow-lg border-2 border-gray-300 w-16 h-20 flex flex-col items-center justify-center cursor-pointer hover:border-red-400 transition-colors"
+              className="bg-white rounded-lg p-2 shadow-sm border w-12 h-16 flex flex-col items-center justify-center cursor-pointer hover:shadow-md transition-shadow"
               onClick={() => toggleCard(rank, suit)}
             >
-              <span className="text-xs font-bold text-gray-700">{rank}</span>
-              <span className={`text-2xl ${getSuitColor(suit)}`}>{suit}</span>
+              <span className="text-xs font-bold text-slate-700">{rank}</span>
+              <span className={`text-lg ${getSuitColor(suit)}`}>{suit}</span>
             </div>
           );
         })}
         
         {/* Empty slots */}
         {Array.from({ length: maxCards - selectedCards.length }).map((_, i) => (
-          <div
+          <Button
             key={i}
-            className="border-2 border-dashed border-green-400 rounded-lg w-16 h-20 flex items-center justify-center cursor-pointer hover:border-green-300 transition-colors"
+            variant="ghost"
+            className="border-2 border-dashed border-slate-600 rounded-lg w-12 h-16 p-0 hover:border-slate-500 hover:bg-slate-800"
             onClick={() => setShowSelector(true)}
           >
-            <span className="text-green-300 text-2xl">+</span>
-          </div>
+            <Plus className="w-4 h-4 text-slate-500" />
+          </Button>
         ))}
       </div>
 
-      {/* Card Selector */}
+      {/* Card Selector Modal */}
       {showSelector && (
-        <div className="bg-white rounded-lg p-4 shadow-xl">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-gray-800">Select a card</h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowSelector(false)}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              ✕
-            </Button>
-          </div>
-          
-          <div className="grid grid-cols-13 gap-1">
-            {ranks.map(rank => (
-              suits.map(suit => {
-                const cardNotation = getCardNotation(rank, suit);
-                const isSelected = selectedCards.includes(cardNotation);
-                const isDisabled = selectedCards.length >= maxCards && !isSelected;
-                
-                return (
-                  <button
-                    key={cardNotation}
-                    className={`
-                      w-8 h-10 text-xs border rounded flex flex-col items-center justify-center
-                      ${isSelected 
-                        ? 'bg-blue-100 border-blue-400' 
-                        : isDisabled 
-                          ? 'bg-gray-100 border-gray-300 opacity-50 cursor-not-allowed'
-                          : 'bg-white border-gray-300 hover:bg-gray-50'
-                      }
-                    `}
-                    onClick={() => !isDisabled && toggleCard(rank, suit)}
-                    disabled={isDisabled}
-                  >
-                    <span className="text-xs font-bold text-gray-700">{rank}</span>
-                    <span className={`text-sm ${getSuitColor(suit)}`}>{suit}</span>
-                  </button>
-                );
-              })
-            ))}
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-900 rounded-lg p-4 w-full max-w-sm max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-white">Select Card</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSelector(false)}
+                className="text-slate-400 hover:text-white p-1"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-4 gap-2">
+              {suits.map(suit => (
+                <div key={suit} className="space-y-1">
+                  <div className={`text-center text-sm ${getSuitColor(suit)}`}>{suit}</div>
+                  {ranks.map(rank => {
+                    const cardNotation = getCardNotation(rank, suit);
+                    const isSelected = selectedCards.includes(cardNotation);
+                    const isDisabled = selectedCards.length >= maxCards && !isSelected;
+                    
+                    return (
+                      <button
+                        key={cardNotation}
+                        className={`
+                          w-full h-8 text-xs rounded flex items-center justify-center font-medium
+                          ${isSelected 
+                            ? 'bg-blue-600 text-white' 
+                            : isDisabled 
+                              ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
+                              : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
+                          }
+                        `}
+                        onClick={() => {
+                          if (!isDisabled) {
+                            toggleCard(rank, suit);
+                            if (!isSelected && selectedCards.length + 1 >= maxCards) {
+                              setShowSelector(false);
+                            }
+                          }
+                        }}
+                        disabled={isDisabled}
+                      >
+                        {rank}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
