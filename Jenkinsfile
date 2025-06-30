@@ -3,8 +3,7 @@ pipeline:
   
   triggers:
     - githubPush: 
-        branches:
-          - main
+        branches: main
 
   environment:
     DOCKER_IMAGE_NAME: "poker_app" 
