@@ -15,9 +15,10 @@ interface GameState {
 interface GameStageProps {
   gameState: GameState;
   onGameStateChange: (gameState: GameState) => void;
+  allSelectedCards: string[];
 }
 
-const GameStage = ({ gameState, onGameStateChange }: GameStageProps) => {
+const GameStage = ({ gameState, onGameStateChange, allSelectedCards }: GameStageProps) => {
   const stages = [
     { name: 'preflop', cards: 0, label: 'Pre' },
     { name: 'flop', cards: 3, label: 'Flop' },
@@ -81,6 +82,7 @@ const GameStage = ({ gameState, onGameStateChange }: GameStageProps) => {
           onCardsChange={onCommunityCardsChange}
           maxCards={getMaxCardsForStage()}
           label=""
+          allSelectedCards={allSelectedCards}
         />
       )}
 

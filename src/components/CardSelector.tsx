@@ -9,9 +9,10 @@ interface CardSelectorProps {
   onCardsChange: (cards: string[]) => void;
   maxCards: number;
   label: string;
+  allSelectedCards?: string[]; // Cards selected across all selectors
 }
 
-const CardSelector = ({ selectedCards, onCardsChange, maxCards, label }: CardSelectorProps) => {
+const CardSelector = ({ selectedCards, onCardsChange, maxCards, label, allSelectedCards = [] }: CardSelectorProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const suits = ['♠', '♥', '♦', '♣'];
@@ -25,12 +26,17 @@ const CardSelector = ({ selectedCards, onCardsChange, maxCards, label }: CardSel
     return selectedCards.includes(`${rank}${suit}`);
   };
 
+  const isCardUnavailable = (rank: string, suit: string) => {
+    const card = `${rank}${suit}`;
+    return allSelectedCards.includes(card) && !selectedCards.includes(card);
+  };
+
   const handleCardClick = (rank: string, suit: string) => {
     const card = `${rank}${suit}`;
     
     if (isCardSelected(rank, suit)) {
       onCardsChange(selectedCards.filter(c => c !== card));
-    } else if (selectedCards.length < maxCards) {
+    } else if (selectedCards.length < maxCards && !isCardUnavailable(rank, suit)) {
       onCardsChange([...selectedCards, card]);
     }
   };
@@ -106,27 +112,34 @@ const CardSelector = ({ selectedCards, onCardsChange, maxCards, label }: CardSel
                       {suit}
                     </div>
                     <div className="grid grid-cols-7 gap-2">
-                      {ranks.map(rank => (
-                        <Button
-                          key={`${rank}${suit}`}
-                          onClick={() => {
-                            handleCardClick(rank, suit);
-                            if (!isCardSelected(rank, suit) && selectedCards.length + 1 >= maxCards) {
-                              setIsOpen(false);
-                            }
-                          }}
-                          disabled={isCardSelected(rank, suit)}
-                          variant={isCardSelected(rank, suit) ? "secondary" : "outline"}
-                          size="sm"
-                          className={`h-10 w-10 p-0 text-xs font-medium rounded-lg transition-all duration-200 ${
-                            isCardSelected(rank, suit)
-                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                              : 'bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300'
-                          }`}
-                        >
-                          {rank}
-                        </Button>
-                      ))}
+                      {ranks.map(rank => {
+                        const isSelected = isCardSelected(rank, suit);
+                        const isUnavailable = isCardUnavailable(rank, suit);
+                        
+                        return (
+                          <Button
+                            key={`${rank}${suit}`}
+                            onClick={() => {
+                              handleCardClick(rank, suit);
+                              if (!isSelected && selectedCards.length + 1 >= maxCards) {
+                                setIsOpen(false);
+                              }
+                            }}
+                            disabled={isSelected || isUnavailable}
+                            variant={isSelected ? "secondary" : "outline"}
+                            size="sm"
+                            className={`h-10 w-10 p-0 text-xs font-medium rounded-lg transition-all duration-200 ${
+                              isSelected
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : isUnavailable
+                                ? 'bg-red-50 text-red-300 border-red-200 cursor-not-allowed opacity-50'
+                                : 'bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            {rank}
+                          </Button>
+                        );
+                      })}
                     </div>
                   </div>
                 ))}

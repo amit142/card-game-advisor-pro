@@ -32,6 +32,9 @@ const Index = () => {
   const [winProbability, setWinProbability] = useState<number | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
 
+  // Get all selected cards to prevent duplicates
+  const allSelectedCards = [...gameState.holeCards, ...gameState.communityCards];
+
   // Enhanced live calculation with improved algorithm
   useEffect(() => {
     if (gameState.holeCards.length === 2) {
@@ -216,6 +219,7 @@ const Index = () => {
               onCardsChange={(cards) => setGameState(prev => ({ ...prev, holeCards: cards }))}
               maxCards={2}
               label=""
+              allSelectedCards={allSelectedCards}
             />
           </CardContent>
         </Card>
@@ -226,6 +230,7 @@ const Index = () => {
             <GameStage
               gameState={gameState}
               onGameStateChange={setGameState}
+              allSelectedCards={allSelectedCards}
             />
           </CardContent>
         </Card>
