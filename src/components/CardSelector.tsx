@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { X } from 'lucide-react';
 
 interface CardSelectorProps {
@@ -92,10 +91,10 @@ const CardSelector = ({ selectedCards, onCardsChange, maxCards, label, allSelect
       {/* Card Picker Modal - Fixed scrolling */}
       {isOpen && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-sm bg-white/95 backdrop-blur border-0 shadow-2xl rounded-2xl overflow-hidden">
-            <CardContent className="p-0">
+          <Card className="w-full max-w-sm bg-white/95 backdrop-blur border-0 shadow-2xl rounded-2xl max-h-[80vh] flex flex-col">
+            <CardContent className="p-0 flex flex-col h-full">
               {/* Fixed Header */}
-              <div className="flex justify-between items-center p-6 pb-4 border-b border-gray-100">
+              <div className="flex justify-between items-center p-6 pb-4 border-b border-gray-100 flex-shrink-0">
                 <h3 className="text-lg font-semibold text-gray-900">Select Card</h3>
                 <Button
                   onClick={() => setIsOpen(false)}
@@ -108,8 +107,8 @@ const CardSelector = ({ selectedCards, onCardsChange, maxCards, label, allSelect
               </div>
               
               {/* Scrollable Content */}
-              <div className="max-h-[70vh] overflow-y-auto">
-                <div className="p-6 pt-4 space-y-4">
+              <div className="flex-1 overflow-y-auto p-6 pt-4">
+                <div className="space-y-4">
                   {suits.map(suit => (
                     <div key={suit} className="space-y-2">
                       <div className={`text-center font-medium text-lg ${getSuitColor(suit)}`}>
