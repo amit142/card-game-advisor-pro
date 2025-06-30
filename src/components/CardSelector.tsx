@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { X } from 'lucide-react';
 
 interface CardSelectorProps {
@@ -91,9 +92,9 @@ const CardSelector = ({ selectedCards, onCardsChange, maxCards, label, allSelect
       {/* Card Picker Modal */}
       {isOpen && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-sm bg-white/95 backdrop-blur border-0 shadow-2xl rounded-2xl">
-            <CardContent className="p-6">
-              <div className="flex justify-between items-center mb-6">
+          <Card className="w-full max-w-sm bg-white/95 backdrop-blur border-0 shadow-2xl rounded-2xl max-h-[90vh] flex flex-col">
+            <CardContent className="p-6 flex flex-col h-full">
+              <div className="flex justify-between items-center mb-6 flex-shrink-0">
                 <h3 className="text-lg font-semibold text-gray-900">Select Card</h3>
                 <Button
                   onClick={() => setIsOpen(false)}
@@ -105,45 +106,47 @@ const CardSelector = ({ selectedCards, onCardsChange, maxCards, label, allSelect
                 </Button>
               </div>
               
-              <div className="space-y-4">
-                {suits.map(suit => (
-                  <div key={suit} className="space-y-2">
-                    <div className={`text-center font-medium ${getSuitColor(suit)}`}>
-                      {suit}
+              <ScrollArea className="flex-1 -mx-2 px-2">
+                <div className="space-y-4 pb-4">
+                  {suits.map(suit => (
+                    <div key={suit} className="space-y-2">
+                      <div className={`text-center font-medium ${getSuitColor(suit)}`}>
+                        {suit}
+                      </div>
+                      <div className="grid grid-cols-7 gap-2">
+                        {ranks.map(rank => {
+                          const isSelected = isCardSelected(rank, suit);
+                          const isUnavailable = isCardUnavailable(rank, suit);
+                          
+                          return (
+                            <Button
+                              key={`${rank}${suit}`}
+                              onClick={() => {
+                                handleCardClick(rank, suit);
+                                if (!isSelected && selectedCards.length + 1 >= maxCards) {
+                                  setIsOpen(false);
+                                }
+                              }}
+                              disabled={isSelected || isUnavailable}
+                              variant={isSelected ? "secondary" : "outline"}
+                              size="sm"
+                              className={`h-10 w-10 p-0 text-xs font-medium rounded-lg transition-all duration-200 ${
+                                isSelected
+                                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                  : isUnavailable
+                                  ? 'bg-red-50 text-red-300 border-red-200 cursor-not-allowed opacity-50'
+                                  : 'bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300'
+                              }`}
+                            >
+                              {rank}
+                            </Button>
+                          );
+                        })}
+                      </div>
                     </div>
-                    <div className="grid grid-cols-7 gap-2">
-                      {ranks.map(rank => {
-                        const isSelected = isCardSelected(rank, suit);
-                        const isUnavailable = isCardUnavailable(rank, suit);
-                        
-                        return (
-                          <Button
-                            key={`${rank}${suit}`}
-                            onClick={() => {
-                              handleCardClick(rank, suit);
-                              if (!isSelected && selectedCards.length + 1 >= maxCards) {
-                                setIsOpen(false);
-                              }
-                            }}
-                            disabled={isSelected || isUnavailable}
-                            variant={isSelected ? "secondary" : "outline"}
-                            size="sm"
-                            className={`h-10 w-10 p-0 text-xs font-medium rounded-lg transition-all duration-200 ${
-                              isSelected
-                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                : isUnavailable
-                                ? 'bg-red-50 text-red-300 border-red-200 cursor-not-allowed opacity-50'
-                                : 'bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300'
-                            }`}
-                          >
-                            {rank}
-                          </Button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </ScrollArea>
             </CardContent>
           </Card>
         </div>
