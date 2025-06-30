@@ -16,7 +16,7 @@ pipeline:
         - checkout:
             scm:
               git:
-                url: "YOUR_GITHUB_REPO_URL" # <--- IMPORTANT: Replace with your actual GitHub repo URL
+                url: "https://github.com/amit142/card-game-advisor-pro#" # <--- IMPORTANT: Replace with your actual GitHub repo URL
                 branch: "main"
                 # credentialsId: "your-github-credentials-id" # Optional: if your repo is private
 
