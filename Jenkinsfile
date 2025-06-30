@@ -1,14 +1,14 @@
 pipeline:
-  agent: any # Assumes your agent has Docker capabilities
-
+  agent: any 
+  
   triggers:
-    - githubPush: # This is a common way to denote a GitHub push trigger
+    - githubPush: 
         branches:
           - main
 
   environment:
-    DOCKER_IMAGE_NAME: "your-app-name" # Replace with your desired app name
-    DOCKER_IMAGE_TAG: "${BUILD_NUMBER}" # Uses Jenkins built-in BUILD_NUMBER
+    DOCKER_IMAGE_NAME: "poker_app" 
+    DOCKER_IMAGE_TAG: "${BUILD_NUMBER}" 
 
   stages:
     - stage: 'Checkout'
@@ -16,9 +16,9 @@ pipeline:
         - checkout:
             scm:
               git:
-                url: "https://github.com/amit142/card-game-advisor-pro#" # <--- IMPORTANT: Replace with your actual GitHub repo URL
+                url: "https://github.com/amit142/card-game-advisor-pro" 
                 branch: "main"
-                # credentialsId: "your-github-credentials-id" # Optional: if your repo is private
+                # credentialsId: "your-github-credentials-id" 
 
     - stage: 'Build Docker Image'
       steps:
@@ -49,16 +49,4 @@ pipeline:
           subject: "FAILURE: Jenkins Build #${BUILD_NUMBER} for ${env.DOCKER_IMAGE_NAME}"
           body: "Build #${BUILD_NUMBER} for ${env.DOCKER_IMAGE_NAME} failed. Please check the Jenkins console output: ${BUILD_URL}"
 
-# Notes for the user (will be communicated separately):
-# 1. Replace 'YOUR_GITHUB_REPO_URL' with the actual URL of your GitHub repository.
-# 2. If your repository is private, you'll need to configure GitHub credentials in Jenkins
-#    and reference the Credentials ID in the 'checkout' step.
-# 3. The 'agent: any' directive assumes your Jenkins agents are configured with Docker
-#    and have the necessary permissions to run Docker commands.
-# 4. The exact syntax for 'triggers', 'checkout', 'script', 'archiveArtifacts', 'mail',
-#    and other steps might vary slightly depending on the specific Jenkins YAML plugin
-#    you are using. Consult your plugin's documentation for precise syntax.
-# 5. Ensure your Jenkins instance is configured for email notifications (SMTP server settings).
-# 6. The artifact "${env.DOCKER_IMAGE_NAME}-${env.DOCKER_IMAGE_TAG}.tar" will be stored
-#    in the Jenkins job's workspace on the agent, typically within the Jenkins home directory.
-#    You can access it via the Jenkins UI (Build Artifacts) or directly on the agent's filesystem.
+
