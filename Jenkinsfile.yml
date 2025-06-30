@@ -1,0 +1,64 @@
+pipeline:
+  agent: any # Assumes your agent has Docker capabilities
+
+  triggers:
+    - githubPush: # This is a common way to denote a GitHub push trigger
+        branches:
+          - main
+
+  environment:
+    DOCKER_IMAGE_NAME: "your-app-name" # Replace with your desired app name
+    DOCKER_IMAGE_TAG: "${BUILD_NUMBER}" # Uses Jenkins built-in BUILD_NUMBER
+
+  stages:
+    - stage: 'Checkout'
+      steps:
+        - checkout:
+            scm:
+              git:
+                url: "YOUR_GITHUB_REPO_URL" # <--- IMPORTANT: Replace with your actual GitHub repo URL
+                branch: "main"
+                # credentialsId: "your-github-credentials-id" # Optional: if your repo is private
+
+    - stage: 'Build Docker Image'
+      steps:
+        - script: |
+            echo "Building Docker image ${env.DOCKER_IMAGE_NAME}:${env.DOCKER_IMAGE_TAG}..."
+            docker build -t "${env.DOCKER_IMAGE_NAME}:${env.DOCKER_IMAGE_TAG}" .
+
+    - stage: 'Save Docker Image Artifact'
+      steps:
+        - script: |
+            echo "Saving Docker image to a .tar file..."
+            docker save -o "${env.DOCKER_IMAGE_NAME}-${env.DOCKER_IMAGE_TAG}.tar" "${env.DOCKER_IMAGE_NAME}:${env.DOCKER_IMAGE_TAG}"
+        - archiveArtifacts:
+            artifacts: "*.tar"
+            fingerprint: true # Optional: helps track artifact usage
+
+  post:
+    always: # Runs regardless of pipeline status, good for cleanup if needed
+      - echo 'Pipeline finished.'
+    success:
+      - mail:
+          to: 'amitbatito@gmail.com'
+          subject: "SUCCESS: Jenkins Build #${BUILD_NUMBER} for ${env.DOCKER_IMAGE_NAME}"
+          body: "Build #${BUILD_NUMBER} for ${env.DOCKER_IMAGE_NAME} completed successfully. Docker image ${env.DOCKER_IMAGE_NAME}:${env.DOCKER_IMAGE_TAG}.tar is available as an artifact."
+    failure:
+      - mail:
+          to: 'amitbatito@gmail.com'
+          subject: "FAILURE: Jenkins Build #${BUILD_NUMBER} for ${env.DOCKER_IMAGE_NAME}"
+          body: "Build #${BUILD_NUMBER} for ${env.DOCKER_IMAGE_NAME} failed. Please check the Jenkins console output: ${BUILD_URL}"
+
+# Notes for the user (will be communicated separately):
+# 1. Replace 'YOUR_GITHUB_REPO_URL' with the actual URL of your GitHub repository.
+# 2. If your repository is private, you'll need to configure GitHub credentials in Jenkins
+#    and reference the Credentials ID in the 'checkout' step.
+# 3. The 'agent: any' directive assumes your Jenkins agents are configured with Docker
+#    and have the necessary permissions to run Docker commands.
+# 4. The exact syntax for 'triggers', 'checkout', 'script', 'archiveArtifacts', 'mail',
+#    and other steps might vary slightly depending on the specific Jenkins YAML plugin
+#    you are using. Consult your plugin's documentation for precise syntax.
+# 5. Ensure your Jenkins instance is configured for email notifications (SMTP server settings).
+# 6. The artifact "${env.DOCKER_IMAGE_NAME}-${env.DOCKER_IMAGE_TAG}.tar" will be stored
+#    in the Jenkins job's workspace on the agent, typically within the Jenkins home directory.
+#    You can access it via the Jenkins UI (Build Artifacts) or directly on the agent's filesystem.
