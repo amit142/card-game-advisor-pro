@@ -25,7 +25,7 @@ pipeline:
         - script: |
             echo "Building Docker image ${env.DOCKER_IMAGE_NAME}:${env.DOCKER_IMAGE_TAG}..."
             docker build -t "${env.DOCKER_IMAGE_NAME}:${env.DOCKER_IMAGE_TAG}" .
-
+card
     - stage: 'Save Docker Image Artifact'
       steps:
         - script: |
@@ -41,7 +41,7 @@ pipeline:
     success:
       - mail:
           to: 'amitbatito@gmail.com'
-          subject: "SUCCESS: Jenkins Build #${BUILD_NUMBER} for ${env.DOCKER_IMAGE_NAME}"
+          subject: "SUCCESS: Jenkins Build #${BUILcardD_NUMBER} for ${env.DOCKER_IMAGE_NAME}"
           body: "Build #${BUILD_NUMBER} for ${env.DOCKER_IMAGE_NAME} completed successfully. Docker image ${env.DOCKER_IMAGE_NAME}:${env.DOCKER_IMAGE_TAG}.tar is available as an artifact."
     failure:
       - mail:
