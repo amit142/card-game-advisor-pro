@@ -25,7 +25,7 @@ pipeline:
         - script: |
             echo "Building Docker image ${env.DOCKER_IMAGE_NAME}:${env.DOCKER_IMAGE_TAG}..."
             docker build -t "${env.DOCKER_IMAGE_NAME}:${env.DOCKER_IMAGE_TAG}" .
-card
+
     - stage: 'Save Docker Image Artifact'
       steps:
         - script: |
