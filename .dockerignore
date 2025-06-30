@@ -1,0 +1,39 @@
+# Node.js
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Build output
+dist
+build
+
+# Git
+.git
+.gitignore
+
+# Editor/IDE specific
+.vscode
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Environment files (if any, though typically handled by build args or runtime env vars)
+# .env
+# .env.*
+
+# Test files (if not needed in the image)
+# coverage
+# src/**/*.test.ts
+# src/**/*.spec.ts
+# src/**/*.test.tsx
+# src/**/*.spec.tsx
