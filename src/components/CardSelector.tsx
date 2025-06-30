@@ -10,7 +10,7 @@ interface CardSelectorProps {
   onCardsChange: (cards: string[]) => void;
   maxCards: number;
   label: string;
-  allSelectedCards?: string[]; // Cards selected across all selectors
+  allSelectedCards?: string[];
 }
 
 const CardSelector = ({ selectedCards, onCardsChange, maxCards, label, allSelectedCards = [] }: CardSelectorProps) => {
@@ -89,12 +89,13 @@ const CardSelector = ({ selectedCards, onCardsChange, maxCards, label, allSelect
         )}
       </div>
 
-      {/* Card Picker Modal */}
+      {/* Card Picker Modal - Fixed scrolling */}
       {isOpen && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-sm bg-white/95 backdrop-blur border-0 shadow-2xl rounded-2xl max-h-[90vh] flex flex-col">
-            <CardContent className="p-6 flex flex-col h-full">
-              <div className="flex justify-between items-center mb-6 flex-shrink-0">
+          <Card className="w-full max-w-sm bg-white/95 backdrop-blur border-0 shadow-2xl rounded-2xl overflow-hidden">
+            <CardContent className="p-0">
+              {/* Fixed Header */}
+              <div className="flex justify-between items-center p-6 pb-4 border-b border-gray-100">
                 <h3 className="text-lg font-semibold text-gray-900">Select Card</h3>
                 <Button
                   onClick={() => setIsOpen(false)}
@@ -106,11 +107,12 @@ const CardSelector = ({ selectedCards, onCardsChange, maxCards, label, allSelect
                 </Button>
               </div>
               
-              <ScrollArea className="flex-1 -mx-2 px-2">
-                <div className="space-y-4 pb-4">
+              {/* Scrollable Content */}
+              <div className="max-h-[70vh] overflow-y-auto">
+                <div className="p-6 pt-4 space-y-4">
                   {suits.map(suit => (
                     <div key={suit} className="space-y-2">
-                      <div className={`text-center font-medium ${getSuitColor(suit)}`}>
+                      <div className={`text-center font-medium text-lg ${getSuitColor(suit)}`}>
                         {suit}
                       </div>
                       <div className="grid grid-cols-7 gap-2">
@@ -145,8 +147,10 @@ const CardSelector = ({ selectedCards, onCardsChange, maxCards, label, allSelect
                       </div>
                     </div>
                   ))}
+                  {/* Extra padding at bottom for better scrolling */}
+                  <div className="h-4"></div>
                 </div>
-              </ScrollArea>
+              </div>
             </CardContent>
           </Card>
         </div>
