@@ -3,7 +3,7 @@ pipeline:
   
   triggers:
     - githubPush: 
-        branches: main
+        branches: main # Corrected line
 
   environment:
     DOCKER_IMAGE_NAME: "poker_app" 
@@ -40,12 +40,10 @@ pipeline:
     success:
       - mail:
           to: 'amitbatito@gmail.com'
-          subject: "SUCCESS: Jenkins Build #${BUILcardD_NUMBER} for ${env.DOCKER_IMAGE_NAME}"
+          subject: "SUCCESS: Jenkins Build #${BUILD_NUMBER} for ${env.DOCKER_IMAGE_NAME}"
           body: "Build #${BUILD_NUMBER} for ${env.DOCKER_IMAGE_NAME} completed successfully. Docker image ${env.DOCKER_IMAGE_NAME}:${env.DOCKER_IMAGE_TAG}.tar is available as an artifact."
     failure:
       - mail:
           to: 'amitbatito@gmail.com'
           subject: "FAILURE: Jenkins Build #${BUILD_NUMBER} for ${env.DOCKER_IMAGE_NAME}"
           body: "Build #${BUILD_NUMBER} for ${env.DOCKER_IMAGE_NAME} failed. Please check the Jenkins console output: ${BUILD_URL}"
-
-
