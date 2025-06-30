@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -90,68 +89,66 @@ const CardSelector = ({ selectedCards, onCardsChange, maxCards, label, allSelect
 
       {/* Card Picker Modal - Fixed scrolling */}
       {isOpen && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-sm bg-white/95 backdrop-blur border-0 shadow-2xl rounded-2xl max-h-[80vh] flex flex-col">
-            <CardContent className="p-0 flex flex-col h-full">
-              {/* Fixed Header */}
-              <div className="flex justify-between items-center p-6 pb-4 border-b border-gray-100 flex-shrink-0">
-                <h3 className="text-lg font-semibold text-gray-900">Select Card</h3>
-                <Button
-                  onClick={() => setIsOpen(false)}
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 rounded-full p-0 hover:bg-gray-100"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-              
-              {/* Scrollable Content */}
-              <div className="flex-1 overflow-y-auto p-6 pt-4">
-                <div className="space-y-4">
-                  {suits.map(suit => (
-                    <div key={suit} className="space-y-2">
-                      <div className={`text-center font-medium text-lg ${getSuitColor(suit)}`}>
-                        {suit}
-                      </div>
-                      <div className="grid grid-cols-7 gap-2">
-                        {ranks.map(rank => {
-                          const isSelected = isCardSelected(rank, suit);
-                          const isUnavailable = isCardUnavailable(rank, suit);
-                          
-                          return (
-                            <Button
-                              key={`${rank}${suit}`}
-                              onClick={() => {
-                                handleCardClick(rank, suit);
-                                if (!isSelected && selectedCards.length + 1 >= maxCards) {
-                                  setIsOpen(false);
-                                }
-                              }}
-                              disabled={isSelected || isUnavailable}
-                              variant={isSelected ? "secondary" : "outline"}
-                              size="sm"
-                              className={`h-10 w-10 p-0 text-xs font-medium rounded-lg transition-all duration-200 ${
-                                isSelected
-                                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                  : isUnavailable
-                                  ? 'bg-red-50 text-red-300 border-red-200 cursor-not-allowed opacity-50'
-                                  : 'bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300'
-                              }`}
-                            >
-                              {rank}
-                            </Button>
-                          );
-                        })}
-                      </div>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[9999]">
+          <div className="w-full max-w-lg bg-white shadow-2xl rounded-2xl max-h-[90vh] flex flex-col">
+            {/* Fixed Header */}
+            <div className="flex justify-between items-center p-6 border-b border-gray-200 bg-white rounded-t-2xl flex-shrink-0 relative z-[10000]">
+              <h3 className="text-xl font-semibold text-gray-900">Select Card</h3>
+              <Button
+                onClick={() => setIsOpen(false)}
+                variant="ghost"
+                size="sm"
+                className="h-10 w-10 rounded-full p-0 hover:bg-gray-100"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            
+            {/* Scrollable Content */}
+            <div className="flex-1 p-6 overflow-y-auto">
+              <div className="space-y-8">
+                {suits.map(suit => (
+                  <div key={suit} className="space-y-4">
+                    <div className={`text-center font-bold text-2xl ${getSuitColor(suit)}`}>
+                      {suit}
                     </div>
-                  ))}
-                  {/* Extra padding at bottom for better scrolling */}
-                  <div className="h-4"></div>
-                </div>
+                    <div className="grid grid-cols-7 gap-3">
+                      {ranks.map(rank => {
+                        const isSelected = isCardSelected(rank, suit);
+                        const isUnavailable = isCardUnavailable(rank, suit);
+                        
+                        return (
+                          <Button
+                            key={`${rank}${suit}`}
+                            onClick={() => {
+                              handleCardClick(rank, suit);
+                              if (!isSelected && selectedCards.length + 1 >= maxCards) {
+                                setIsOpen(false);
+                              }
+                            }}
+                            disabled={isSelected || isUnavailable}
+                            variant={isSelected ? "secondary" : "outline"}
+                            size="sm"
+                            className={`h-12 w-12 p-0 text-sm font-bold rounded-lg transition-all duration-200 ${
+                              isSelected
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : isUnavailable
+                                ? 'bg-red-50 text-red-300 border-red-200 cursor-not-allowed opacity-50'
+                                : 'bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300 hover:shadow-md'
+                            }`}
+                          >
+                            {rank}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+                {/* Extra padding at bottom */}
+                <div className="h-6"></div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       )}
     </div>
