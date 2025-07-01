@@ -9,7 +9,7 @@ pipeline {
     triggers {
         githubPush()
         // Optional: Add polling as backup
-        pollSCM('H/5 * * * *') // Poll every 5 minutes as fallback
+        //pollSCM('H/5 * * * *') // Poll every 5 minutes as fallback
     }
     
     options {
