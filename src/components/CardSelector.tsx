@@ -89,7 +89,7 @@ const CardSelector = ({ selectedCards, onCardsChange, maxCards, label, allSelect
 
       {/* Card Picker Modal - Fixed scrolling */}
       {isOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[9999]">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[99999]">
           <div className="w-full max-w-lg bg-white shadow-2xl rounded-2xl max-h-[90vh] flex flex-col">
             {/* Fixed Header */}
             <div className="flex justify-between items-center p-6 border-b border-gray-200 bg-white rounded-t-2xl flex-shrink-0 relative z-[10000]">
@@ -105,7 +105,7 @@ const CardSelector = ({ selectedCards, onCardsChange, maxCards, label, allSelect
             </div>
             
             {/* Scrollable Content */}
-            <div className="flex-1 p-6 overflow-y-auto">
+            <div className="flex-1 p-6 overflow-y-auto min-h-0">
               <div className="space-y-8">
                 {suits.map(suit => (
                   <div key={suit} className="space-y-4">

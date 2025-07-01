@@ -208,7 +208,7 @@ const Index = () => {
         </div>
 
         {/* Win Probability Display */}
-        <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg shadow-black/3 rounded-2xl overflow-hidden">
+        <Card className="bg-white/90 border-0 shadow-lg shadow-black/3 rounded-2xl overflow-hidden">
           <CardContent className="p-6 text-center">
             {winProbability !== null ? (
               <div className="space-y-3">
@@ -289,7 +289,7 @@ const Index = () => {
         )}
 
         {/* Hole Cards */}
-        <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg shadow-black/3 rounded-2xl">
+        <Card className="bg-white/90 border-0 shadow-lg shadow-black/3 rounded-2xl">
           <CardContent className="p-5">
             <div className="text-sm font-semibold text-gray-700 mb-3">Your Cards</div>
             <CardSelector
@@ -303,7 +303,7 @@ const Index = () => {
         </Card>
 
         {/* Game Stage & Community Cards */}
-        <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg shadow-black/3 rounded-2xl">
+        <Card className="bg-white/90 border-0 shadow-lg shadow-black/3 rounded-2xl">
           <CardContent className="p-5">
             <GameStage
               gameState={gameState}
@@ -314,7 +314,7 @@ const Index = () => {
         </Card>
 
         {/* Settings */}
-        <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg shadow-black/3 rounded-2xl">
+        <Card className="bg-white/90 border-0 shadow-lg shadow-black/3 rounded-2xl">
           <CardContent className="p-5 space-y-5">
             <div className="text-sm font-semibold text-gray-700">Game Settings</div>
             
