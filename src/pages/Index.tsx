@@ -1,6 +1,34 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"; // Assuming this is the correct path for Select
+
+// Define standard poker positions (e.g., for a 9-max table)
+const ALL_POSITIONS_9_MAX = ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN'];
+const ALL_POSITIONS_6_MAX = ['SB', 'BB', 'UTG', 'MP', 'CO', 'BTN']; // More common for 6-max
+
+// Helper function to get available positions based on the number of players
+// This logic might need refinement based on standard poker conventions for each player count.
+export const getAvailablePositions = (numberOfPlayers: number): string[] => {
+  if (numberOfPlayers < 2) return [];
+  if (numberOfPlayers === 2) return ['SB', 'BB']; // Heads Up
+  if (numberOfPlayers === 3) return ['SB', 'BB', 'BTN'];
+  if (numberOfPlayers === 4) return ['SB', 'BB', 'UTG', 'BTN']; // UTG is often CO here
+  if (numberOfPlayers === 5) return ['SB', 'BB', 'UTG', 'CO', 'BTN'];
+  if (numberOfPlayers === 6) return ALL_POSITIONS_6_MAX;
+  if (numberOfPlayers === 7) return ['SB', 'BB', 'UTG', 'UTG+1', 'MP', 'CO', 'BTN']; // Example
+  if (numberOfPlayers === 8) return ['SB', 'BB', 'UTG', 'UTG+1', 'MP', 'LJ', 'CO', 'BTN']; // Example
+  if (numberOfPlayers >= 9) return ALL_POSITIONS_9_MAX.slice(0, numberOfPlayers); // Cap at 9, take first N
+
+  // Default fallback, though above conditions should cover typical poker table sizes
+  return ALL_POSITIONS_9_MAX.slice(0, numberOfPlayers);
+};
 import CardSelector from '@/components/CardSelector';
 import PositionSelector from '@/components/PositionSelector';
 import GameStage from '@/components/GameStage';
@@ -63,14 +91,36 @@ const Index = () => {
   }, [gameState.holeCards, gameState.communityCards, gameState.opponents, gameState.gameStage, gameState.position]);
 
   const resetGame = () => {
-    setGameState({
-      holeCards: [],
-      communityCards: [],
-      position: '',
-      opponents: 2,
-      potSize: 0,
-      gameStage: 'preflop',
-      bettingHistory: []
+    setGameState(prevState => {
+      const numberOfPlayers = prevState.opponents + 1;
+      const availablePositions = getAvailablePositions(numberOfPlayers);
+      let nextPosition = prevState.position;
+
+      if (availablePositions.length > 0) {
+        const currentPositionIndex = availablePositions.indexOf(prevState.position);
+        if (currentPositionIndex !== -1) {
+          // Current position is valid, find next
+          nextPosition = availablePositions[(currentPositionIndex + 1) % availablePositions.length];
+        } else {
+          // Current position is not in the available list (e.g. num players changed),
+          // or no position was set. Default to the first available one.
+          nextPosition = availablePositions[0];
+        }
+      } else {
+        // No available positions (e.g., 0 or 1 player), so clear position
+        nextPosition = '';
+      }
+
+      return {
+        ...prevState,
+        holeCards: [],
+        communityCards: [],
+        position: nextPosition, // Set to the next position
+        // opponents: prevState.opponents, // This is already preserved by ...prevState
+        potSize: 0,
+        gameStage: 'preflop',
+        bettingHistory: []
+      };
     });
     setWinProbability(null);
     setInsights([]);
@@ -271,6 +321,7 @@ const Index = () => {
             <PositionSelector
               position={gameState.position}
               onPositionChange={(position) => setGameState(prev => ({ ...prev, position }))}
+              numberOfPlayers={gameState.opponents + 1} // hero + opponents
             />
           </CardContent>
         </Card>

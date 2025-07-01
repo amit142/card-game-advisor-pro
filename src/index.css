@@ -2,6 +2,57 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Poker Table Styles */
+.poker-table {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 280px; /* Adjust as needed */
+  height: 160px; /* Adjust as needed */
+  background-color: #2a623d; /* Dark green for table felt */
+  border-radius: 70px; /* Oval shape */
+  border: 5px solid #5c3a21; /* Wooden border */
+  position: relative;
+  margin: 20px auto;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2), inset 0 0 10px rgba(0,0,0,0.3);
+}
+
+.poker-seat {
+  width: 50px; /* Adjust as needed */
+  height: 35px; /* Adjust as needed */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.7rem; /* Smaller text for seat names */
+  border-radius: 5px;
+  position: absolute; /* Position seats around the table */
+  /*
+    Dynamic positioning for N players is complex.
+    The following are examples for a 6-player table.
+    This would ideally be calculated in JS for true dynamic layout.
+  */
+}
+
+/* Example seat positions for a 6-player table */
+/* This is illustrative and would need dynamic calculation for different player counts */
+.poker-seat-0 { transform: translate(-60px, -55px); } /* Top-left-ish (SB) */
+.poker-seat-1 { transform: translate(60px, -55px); }  /* Top-right-ish (BB) */
+.poker-seat-2 { transform: translate(100px, 0px); }   /* Right (UTG) */
+.poker-seat-3 { transform: translate(60px, 55px); }   /* Bottom-right-ish (MP) */
+.poker-seat-4 { transform: translate(-60px, 55px); }  /* Bottom-left-ish (CO) */
+.poker-seat-5 { transform: translate(-100px, 0px); }  /* Left (BTN) */
+
+/* Styling for 2 players (Heads Up) */
+.poker-seat-hu-0 { transform: translate(0px, -55px); } /* Top (SB) */
+.poker-seat-hu-1 { transform: translate(0px, 55px); }  /* Bottom (BB) */
+
+
+/* Styling for selected seat - use Button variants for this if possible */
+.poker-seat.selected {
+  /* box-shadow: 0 0 0 2px #3b82f6; Tailwind's ring-blue-500 */
+  /* background-color: #3b82f6; text-white; (from Button default variant) */
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
