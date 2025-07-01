@@ -19,14 +19,18 @@ interface GameState {
 }
 
 const Index = () => {
-  const [gameState, setGameState] = useState<GameState>({
-    holeCards: [],
-    communityCards: [],
-    position: '',
-    opponents: 2,
-    potSize: 0,
-    gameStage: 'preflop',
-    bettingHistory: []
+  const [gameState, setGameState] = useState<GameState>(() => {
+    const storedOpponents = localStorage.getItem('opponents');
+    const initialOpponents = storedOpponents ? parseInt(storedOpponents, 10) : 2;
+    return {
+      holeCards: [],
+      communityCards: [],
+      position: '',
+      opponents: initialOpponents,
+      potSize: 0,
+      gameStage: 'preflop',
+      bettingHistory: []
+    };
   });
 
   const [winProbability, setWinProbability] = useState<number | null>(null);
@@ -34,6 +38,11 @@ const Index = () => {
 
   // Get all selected cards to prevent duplicates
   const allSelectedCards = [...gameState.holeCards, ...gameState.communityCards];
+
+  // Save opponents to local storage
+  useEffect(() => {
+    localStorage.setItem('opponents', gameState.opponents.toString());
+  }, [gameState.opponents]);
 
   // Enhanced live calculation with improved algorithm
   useEffect(() => {
