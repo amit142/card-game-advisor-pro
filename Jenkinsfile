@@ -4,8 +4,6 @@ pipeline {
     environment {
         DOCKER_IMAGE_NAME = "poker_app"
         DOCKER_IMAGE_TAG = "${BUILD_NUMBER}"
-        DOCKER_REGISTRY = credentials('docker-registry-url') // Optional: if using private registry
-        GIT_CREDENTIALS_ID = 'github-credentials' // Configure in Jenkins credentials
     }
     
     triggers {
@@ -27,8 +25,7 @@ pipeline {
                     $class: 'GitSCM', 
                     branches: [[name: '*/main']], 
                     userRemoteConfigs: [[
-                        url: 'https://github.com/amit142/card-game-advisor-pro',
-                        credentialsId: "${GIT_CREDENTIALS_ID}"
+                        url: 'https://github.com/amit142/card-game-advisor-pro'
                     ]],
                     extensions: [
                         [$class: 'CleanBeforeCheckout'],
