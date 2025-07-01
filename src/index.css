@@ -4,54 +4,55 @@
 
 /* Poker Table Styles */
 .poker-table {
-  display: flex;
+  display: flex; /* Will be used as a container for absolutely positioned seats */
   justify-content: center;
   align-items: center;
-  width: 280px; /* Adjust as needed */
-  height: 160px; /* Adjust as needed */
-  background-color: #2a623d; /* Dark green for table felt */
-  border-radius: 70px; /* Oval shape */
-  border: 5px solid #5c3a21; /* Wooden border */
-  position: relative;
-  margin: 20px auto;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2), inset 0 0 10px rgba(0,0,0,0.3);
+  width: 300px; /* Increased size slightly */
+  height: 180px; /* Increased size slightly */
+  background-color: #006400; /* Darker, richer green for table felt */
+  border-radius: 90px; /* More pronounced oval shape */
+  border: 8px solid #8B4513; /* SaddleBrown for a more 'wooden' border */
+  position: relative; /* Crucial for positioning seats absolutely within it */
+  margin: 25px auto;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.3), inset 0 0 15px rgba(0,0,0,0.4);
 }
 
 .poker-seat {
-  width: 50px; /* Adjust as needed */
-  height: 35px; /* Adjust as needed */
+  min-width: 55px; /* Ensure enough space for text like UTG+1 */
+  padding: 0 4px; /* Horizontal padding for longer text */
+  height: 38px;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 0.7rem; /* Smaller text for seat names */
-  border-radius: 5px;
-  position: absolute; /* Position seats around the table */
-  /*
-    Dynamic positioning for N players is complex.
-    The following are examples for a 6-player table.
-    This would ideally be calculated in JS for true dynamic layout.
-  */
+  font-size: 0.65rem; /* Adjusted for potentially longer strings */
+  font-weight: 500;
+  border-radius: 6px;
+  position: absolute; /* Seats will be positioned absolutely by the component */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out; /* Smooth transitions */
+  cursor: pointer;
+  /* Base styling for non-selected seats (will be Tailwind Button 'outline' like) */
+  background-color: #f3f4f6; /* gray-100 */
+  border: 1px solid #d1d5db; /* gray-300 */
+  color: #374151; /* gray-700 */
 }
 
-/* Example seat positions for a 6-player table */
-/* This is illustrative and would need dynamic calculation for different player counts */
-.poker-seat-0 { transform: translate(-60px, -55px); } /* Top-left-ish (SB) */
-.poker-seat-1 { transform: translate(60px, -55px); }  /* Top-right-ish (BB) */
-.poker-seat-2 { transform: translate(100px, 0px); }   /* Right (UTG) */
-.poker-seat-3 { transform: translate(60px, 55px); }   /* Bottom-right-ish (MP) */
-.poker-seat-4 { transform: translate(-60px, 55px); }  /* Bottom-left-ish (CO) */
-.poker-seat-5 { transform: translate(-100px, 0px); }  /* Left (BTN) */
+.poker-seat:hover {
+  border-color: #9ca3af; /* gray-400 */
+  box-shadow: 0 3px 6px rgba(0,0,0,0.25);
+}
 
-/* Styling for 2 players (Heads Up) */
-.poker-seat-hu-0 { transform: translate(0px, -55px); } /* Top (SB) */
-.poker-seat-hu-1 { transform: translate(0px, 55px); }  /* Bottom (BB) */
-
-
-/* Styling for selected seat - use Button variants for this if possible */
+/* Styling for the currently selected seat (will be Tailwind Button 'default' like) */
 .poker-seat.selected {
-  /* box-shadow: 0 0 0 2px #3b82f6; Tailwind's ring-blue-500 */
-  /* background-color: #3b82f6; text-white; (from Button default variant) */
+  background-color: #3b82f6; /* blue-500 */
+  color: white;
+  border-color: #3b82f6; /* blue-500 */
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4), 0 3px 6px rgba(0,0,0,0.3); /* Ring and shadow */
+  font-weight: 600;
 }
+
+/* No more .poker-seat-N or .poker-seat-hu-N classes here.
+   Positioning will be done via inline styles in the React component. */
 
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.

@@ -9,25 +9,40 @@ import {
   SelectValue,
 } from "@/components/ui/select"; // Assuming this is the correct path for Select
 
-// Define standard poker positions (e.g., for a 9-max table)
-const ALL_POSITIONS_9_MAX = ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN'];
-const ALL_POSITIONS_6_MAX = ['SB', 'BB', 'UTG', 'MP', 'CO', 'BTN']; // More common for 6-max
+// Standard poker positions
+const POSITIONS_FULL_RING = ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN'];
+const POSITIONS_6_MAX = ['SB', 'BB', 'UTG', 'MP', 'CO', 'BTN'];
 
 // Helper function to get available positions based on the number of players
-// This logic might need refinement based on standard poker conventions for each player count.
 export const getAvailablePositions = (numberOfPlayers: number): string[] => {
   if (numberOfPlayers < 2) return [];
-  if (numberOfPlayers === 2) return ['SB', 'BB']; // Heads Up
-  if (numberOfPlayers === 3) return ['SB', 'BB', 'BTN'];
-  if (numberOfPlayers === 4) return ['SB', 'BB', 'UTG', 'BTN']; // UTG is often CO here
-  if (numberOfPlayers === 5) return ['SB', 'BB', 'UTG', 'CO', 'BTN'];
-  if (numberOfPlayers === 6) return ALL_POSITIONS_6_MAX;
-  if (numberOfPlayers === 7) return ['SB', 'BB', 'UTG', 'UTG+1', 'MP', 'CO', 'BTN']; // Example
-  if (numberOfPlayers === 8) return ['SB', 'BB', 'UTG', 'UTG+1', 'MP', 'LJ', 'CO', 'BTN']; // Example
-  if (numberOfPlayers >= 9) return ALL_POSITIONS_9_MAX.slice(0, numberOfPlayers); // Cap at 9, take first N
+  if (numberOfPlayers > 9) numberOfPlayers = 9; // Cap at 9 players for this tool's purposes
 
-  // Default fallback, though above conditions should cover typical poker table sizes
-  return ALL_POSITIONS_9_MAX.slice(0, numberOfPlayers);
+  switch (numberOfPlayers) {
+    case 2: // Heads Up
+      return ['SB', 'BB'];
+    case 3:
+      // SB, BB, BTN
+      return [POSITIONS_FULL_RING[0], POSITIONS_FULL_RING[1], POSITIONS_FULL_RING[8]];
+    case 4:
+      // SB, BB, CO, BTN (or UTG, BTN) - let's use SB, BB, CO, BTN for simplicity from full ring
+      return [POSITIONS_FULL_RING[0], POSITIONS_FULL_RING[1], POSITIONS_FULL_RING[7], POSITIONS_FULL_RING[8]];
+    case 5:
+      // SB, BB, UTG, CO, BTN
+      return [POSITIONS_FULL_RING[0], POSITIONS_FULL_RING[1], POSITIONS_FULL_RING[2], POSITIONS_FULL_RING[7], POSITIONS_FULL_RING[8]];
+    case 6:
+      return POSITIONS_6_MAX; // Standard 6-max names
+    case 7:
+      // SB, BB, UTG, UTG+1, HJ (or MP), CO, BTN
+      return [POSITIONS_FULL_RING[0], POSITIONS_FULL_RING[1], POSITIONS_FULL_RING[2], POSITIONS_FULL_RING[3], POSITIONS_FULL_RING[6], POSITIONS_FULL_RING[7], POSITIONS_FULL_RING[8]];
+    case 8:
+      // SB, BB, UTG, UTG+1, LJ, HJ, CO, BTN
+      return [POSITIONS_FULL_RING[0], POSITIONS_FULL_RING[1], POSITIONS_FULL_RING[2], POSITIONS_FULL_RING[3], POSITIONS_FULL_RING[5], POSITIONS_FULL_RING[6], POSITIONS_FULL_RING[7], POSITIONS_FULL_RING[8]];
+    case 9:
+      return POSITIONS_FULL_RING;
+    default: // Should not be reached if numberOfPlayers is between 2 and 9
+      return [];
+  }
 };
 import CardSelector from '@/components/CardSelector';
 import PositionSelector from '@/components/PositionSelector';
