@@ -1,6 +1,52 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"; // Assuming this is the correct path for Select
+
+// Standard poker positions
+const POSITIONS_10_MAX = ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'MP1', 'LJ', 'HJ', 'CO', 'BTN'];
+const POSITIONS_FULL_RING = ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN']; // 9-max
+const POSITIONS_6_MAX = ['SB', 'BB', 'UTG', 'MP', 'CO', 'BTN'];
+
+// Helper function to get available positions based on the number of players
+export const getAvailablePositions = (numberOfPlayers: number): string[] => {
+  if (numberOfPlayers < 2) return [];
+  if (numberOfPlayers > 10) numberOfPlayers = 10; // Cap at 10 players
+
+  switch (numberOfPlayers) {
+    case 2: // Heads Up
+      return ['SB', 'BB'];
+    case 3: // SB, BB, BTN
+      return [POSITIONS_10_MAX[0], POSITIONS_10_MAX[1], POSITIONS_10_MAX[9]]; // SB, BB, BTN from 10-max
+    case 4: // SB, BB, CO, BTN
+      return [POSITIONS_10_MAX[0], POSITIONS_10_MAX[1], POSITIONS_10_MAX[8], POSITIONS_10_MAX[9]];
+    case 5: // SB, BB, UTG, CO, BTN
+      return [POSITIONS_10_MAX[0], POSITIONS_10_MAX[1], POSITIONS_10_MAX[2], POSITIONS_10_MAX[8], POSITIONS_10_MAX[9]];
+    case 6: // Standard 6-max names
+      return POSITIONS_6_MAX;
+    case 7: // SB, BB, UTG, UTG+1, HJ, CO, BTN (using 10-max as base for consistency)
+      // POSITIONS_10_MAX: ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'MP1', 'LJ', 'HJ', 'CO', 'BTN']
+      // For 7 players: SB, BB, UTG, UTG+1, HJ, CO, BTN
+      return [POSITIONS_10_MAX[0], POSITIONS_10_MAX[1], POSITIONS_10_MAX[2], POSITIONS_10_MAX[3], POSITIONS_10_MAX[7], POSITIONS_10_MAX[8], POSITIONS_10_MAX[9]];
+    case 8: // SB, BB, UTG, UTG+1, LJ, HJ, CO, BTN
+      return [POSITIONS_10_MAX[0], POSITIONS_10_MAX[1], POSITIONS_10_MAX[2], POSITIONS_10_MAX[3], POSITIONS_10_MAX[6], POSITIONS_10_MAX[7], POSITIONS_10_MAX[8], POSITIONS_10_MAX[9]];
+    case 9: // Full ring (9-max)
+      return POSITIONS_FULL_RING; // This is POSITIONS_10_MAX without MP1 essentially, or a specific 9-set. Let's use the defined 9-max.
+                                // POSITIONS_FULL_RING = ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN']
+                                // For consistency, could derive from POSITIONS_10_MAX by omitting one (e.g. MP1)
+                                // For now, using the specific POSITIONS_FULL_RING is fine.
+    case 10:
+      return POSITIONS_10_MAX;
+    default: // Should not be reached if numberOfPlayers is between 2 and 10
+      return [];
+  }
+};
 import CardSelector from '@/components/CardSelector';
 import PositionSelector from '@/components/PositionSelector';
 import GameStage from '@/components/GameStage';
@@ -72,16 +118,38 @@ const Index = () => {
   }, [gameState.holeCards, gameState.communityCards, gameState.opponents, gameState.gameStage, gameState.position]);
 
   const resetGame = () => {
-    setGameState(prevState => ({
-      ...prevState, // Keep all previous state
-      holeCards: [],
-      communityCards: [],
-      position: '',
-      // opponents: 2, // Keep the existing number of opponents
-      potSize: 0,
-      gameStage: 'preflop',
-      bettingHistory: []
-    }));
+    setGameState(prevState => {
+      const numberOfPlayers = prevState.opponents + 1;
+      const availablePositions = getAvailablePositions(numberOfPlayers);
+      let nextPosition = prevState.position;
+
+      if (availablePositions.length > 0) {
+        const currentPositionIndex = availablePositions.indexOf(prevState.position);
+        if (currentPositionIndex !== -1) {
+          // Current position is valid, find next
+          nextPosition = availablePositions[(currentPositionIndex + 1) % availablePositions.length];
+        } else {
+          // Current position is not in the available list (e.g. num players changed),
+          // or no position was set. Default to the first available one.
+          nextPosition = availablePositions[0];
+        }
+      } else {
+        // No available positions (e.g., 0 or 1 player), so clear position
+        nextPosition = '';
+      }
+
+      return {
+        ...prevState,
+        holeCards: [],
+        communityCards: [],
+        position: nextPosition, // Set to the next position
+        // opponents: prevState.opponents, // This is already preserved by ...prevState
+        potSize: 0,
+        gameStage: 'preflop',
+        bettingHistory: []
+      };
+    });
+
     setWinProbability(null);
     setInsights([]);
   };
@@ -281,6 +349,7 @@ const Index = () => {
             <PositionSelector
               position={gameState.position}
               onPositionChange={(position) => setGameState(prev => ({ ...prev, position }))}
+              numberOfPlayers={gameState.opponents + 1} // hero + opponents
             />
           </CardContent>
         </Card>
