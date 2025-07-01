@@ -10,37 +10,40 @@ import {
 } from "@/components/ui/select"; // Assuming this is the correct path for Select
 
 // Standard poker positions
-const POSITIONS_FULL_RING = ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN'];
+const POSITIONS_10_MAX = ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'MP1', 'LJ', 'HJ', 'CO', 'BTN'];
+const POSITIONS_FULL_RING = ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN']; // 9-max
 const POSITIONS_6_MAX = ['SB', 'BB', 'UTG', 'MP', 'CO', 'BTN'];
 
 // Helper function to get available positions based on the number of players
 export const getAvailablePositions = (numberOfPlayers: number): string[] => {
   if (numberOfPlayers < 2) return [];
-  if (numberOfPlayers > 9) numberOfPlayers = 9; // Cap at 9 players for this tool's purposes
+  if (numberOfPlayers > 10) numberOfPlayers = 10; // Cap at 10 players
 
   switch (numberOfPlayers) {
     case 2: // Heads Up
       return ['SB', 'BB'];
-    case 3:
-      // SB, BB, BTN
-      return [POSITIONS_FULL_RING[0], POSITIONS_FULL_RING[1], POSITIONS_FULL_RING[8]];
-    case 4:
-      // SB, BB, CO, BTN (or UTG, BTN) - let's use SB, BB, CO, BTN for simplicity from full ring
-      return [POSITIONS_FULL_RING[0], POSITIONS_FULL_RING[1], POSITIONS_FULL_RING[7], POSITIONS_FULL_RING[8]];
-    case 5:
-      // SB, BB, UTG, CO, BTN
-      return [POSITIONS_FULL_RING[0], POSITIONS_FULL_RING[1], POSITIONS_FULL_RING[2], POSITIONS_FULL_RING[7], POSITIONS_FULL_RING[8]];
-    case 6:
-      return POSITIONS_6_MAX; // Standard 6-max names
-    case 7:
-      // SB, BB, UTG, UTG+1, HJ (or MP), CO, BTN
-      return [POSITIONS_FULL_RING[0], POSITIONS_FULL_RING[1], POSITIONS_FULL_RING[2], POSITIONS_FULL_RING[3], POSITIONS_FULL_RING[6], POSITIONS_FULL_RING[7], POSITIONS_FULL_RING[8]];
-    case 8:
-      // SB, BB, UTG, UTG+1, LJ, HJ, CO, BTN
-      return [POSITIONS_FULL_RING[0], POSITIONS_FULL_RING[1], POSITIONS_FULL_RING[2], POSITIONS_FULL_RING[3], POSITIONS_FULL_RING[5], POSITIONS_FULL_RING[6], POSITIONS_FULL_RING[7], POSITIONS_FULL_RING[8]];
-    case 9:
-      return POSITIONS_FULL_RING;
-    default: // Should not be reached if numberOfPlayers is between 2 and 9
+    case 3: // SB, BB, BTN
+      return [POSITIONS_10_MAX[0], POSITIONS_10_MAX[1], POSITIONS_10_MAX[9]]; // SB, BB, BTN from 10-max
+    case 4: // SB, BB, CO, BTN
+      return [POSITIONS_10_MAX[0], POSITIONS_10_MAX[1], POSITIONS_10_MAX[8], POSITIONS_10_MAX[9]];
+    case 5: // SB, BB, UTG, CO, BTN
+      return [POSITIONS_10_MAX[0], POSITIONS_10_MAX[1], POSITIONS_10_MAX[2], POSITIONS_10_MAX[8], POSITIONS_10_MAX[9]];
+    case 6: // Standard 6-max names
+      return POSITIONS_6_MAX;
+    case 7: // SB, BB, UTG, UTG+1, HJ, CO, BTN (using 10-max as base for consistency)
+      // POSITIONS_10_MAX: ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'MP1', 'LJ', 'HJ', 'CO', 'BTN']
+      // For 7 players: SB, BB, UTG, UTG+1, HJ, CO, BTN
+      return [POSITIONS_10_MAX[0], POSITIONS_10_MAX[1], POSITIONS_10_MAX[2], POSITIONS_10_MAX[3], POSITIONS_10_MAX[7], POSITIONS_10_MAX[8], POSITIONS_10_MAX[9]];
+    case 8: // SB, BB, UTG, UTG+1, LJ, HJ, CO, BTN
+      return [POSITIONS_10_MAX[0], POSITIONS_10_MAX[1], POSITIONS_10_MAX[2], POSITIONS_10_MAX[3], POSITIONS_10_MAX[6], POSITIONS_10_MAX[7], POSITIONS_10_MAX[8], POSITIONS_10_MAX[9]];
+    case 9: // Full ring (9-max)
+      return POSITIONS_FULL_RING; // This is POSITIONS_10_MAX without MP1 essentially, or a specific 9-set. Let's use the defined 9-max.
+                                // POSITIONS_FULL_RING = ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN']
+                                // For consistency, could derive from POSITIONS_10_MAX by omitting one (e.g. MP1)
+                                // For now, using the specific POSITIONS_FULL_RING is fine.
+    case 10:
+      return POSITIONS_10_MAX;
+    default: // Should not be reached if numberOfPlayers is between 2 and 10
       return [];
   }
 };
