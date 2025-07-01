@@ -105,7 +105,7 @@ const CardSelector = ({ selectedCards, onCardsChange, maxCards, label, allSelect
             </div>
             
             {/* Scrollable Content */}
-            <div className="flex-1 p-6 overflow-y-auto">
+            <div className="flex-1 p-6 overflow-y-auto min-h-0">
               <div className="space-y-8">
                 {suits.map(suit => (
                   <div key={suit} className="space-y-4">
