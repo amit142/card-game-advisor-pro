@@ -63,15 +63,16 @@ const Index = () => {
   }, [gameState.holeCards, gameState.communityCards, gameState.opponents, gameState.gameStage, gameState.position]);
 
   const resetGame = () => {
-    setGameState({
+    setGameState(prevState => ({
+      ...prevState, // Keep all previous state
       holeCards: [],
       communityCards: [],
       position: '',
-      opponents: 2,
+      // opponents: 2, // Keep the existing number of opponents
       potSize: 0,
       gameStage: 'preflop',
       bettingHistory: []
-    });
+    }));
     setWinProbability(null);
     setInsights([]);
   };
