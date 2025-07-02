@@ -5,32 +5,18 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import { Button } from "@/components/ui/button";
-import { useTheme } from "next-themes";
+import { ThemeToggle } from "./components/ThemeToggle";
 
 const queryClient = new QueryClient();
-
-const ThemeToggle = () => {
-  const { theme, setTheme } = useTheme();
-
-  return (
-    <Button
-      variant="outline"
-      size="icon"
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      className="fixed top-4 right-4"
-    >
-      {theme === "dark" ? "🌞" : "🌙"}
-    </Button>
-  );
-};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
       <Toaster />
       <Sonner />
-      <ThemeToggle />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
