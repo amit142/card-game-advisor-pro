@@ -84,11 +84,34 @@ pipeline {
                                 # Download GitLeaks if not already present
                                 if [ ! -f "./gitleaks" ]; then
                                     echo "Downloading GitLeaks..."
-                                    GITLEAKS_VERSION=$(curl -s https://api.github.com/repos/zricethezav/gitleaks/releases/latest | grep tag_name | cut -d '"' -f 4)
-                                    wget -q "https://github.com/zricethezav/gitleaks/releases/download/${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION#v}_linux_x64.tar.gz"
-                                    tar -xzf "gitleaks_${GITLEAKS_VERSION#v}_linux_x64.tar.gz"
+                                    
+                                    # Get the latest version using jq or awk for better JSON parsing
+                                    if command -v jq >/dev/null 2>&1; then
+                                        GITLEAKS_VERSION=$(curl -s https://api.github.com/repos/zricethezav/gitleaks/releases/latest | jq -r '.tag_name')
+                                    else
+                                        # Fallback method using awk
+                                        GITLEAKS_VERSION=$(curl -s https://api.github.com/repos/zricethezav/gitleaks/releases/latest | awk -F'"' '/tag_name/{print $4}')
+                                    fi
+                                    
+                                    echo "Latest GitLeaks version: $GITLEAKS_VERSION"
+                                    
+                                    # Verify we got a version
+                                    if [ -z "$GITLEAKS_VERSION" ]; then
+                                        echo "Failed to get GitLeaks version, using fallback"
+                                        GITLEAKS_VERSION="v8.18.4"  # Fallback to known working version
+                                    fi
+                                    
+                                    # Remove 'v' prefix for download URL
+                                    VERSION_NUMBER=${GITLEAKS_VERSION#v}
+                                    
+                                    # Download and extract
+                                    wget -q "https://github.com/zricethezav/gitleaks/releases/download/${GITLEAKS_VERSION}/gitleaks_${VERSION_NUMBER}_linux_x64.tar.gz"
+                                    tar -xzf "gitleaks_${VERSION_NUMBER}_linux_x64.tar.gz"
                                     chmod +x gitleaks
-                                    rm "gitleaks_${GITLEAKS_VERSION#v}_linux_x64.tar.gz"
+                                    rm "gitleaks_${VERSION_NUMBER}_linux_x64.tar.gz"
+                                    
+                                    echo "GitLeaks installed successfully"
+                                    ./gitleaks version
                                 fi
                             '''
                             
@@ -135,7 +158,11 @@ pipeline {
                     sh '''
                         echo "📦 Dependency Vulnerabilities:"
                         if [ -f "npm-audit-report.json" ]; then
-                            AUDIT_COUNT=$(cat npm-audit-report.json | jq -r '.metadata.vulnerabilities.total // 0' 2>/dev/null || echo "0")
+                            if command -v jq >/dev/null 2>&1; then
+                                AUDIT_COUNT=$(cat npm-audit-report.json | jq -r '.metadata.vulnerabilities.total // 0' 2>/dev/null || echo "0")
+                            else
+                                AUDIT_COUNT="Unknown (jq not available)"
+                            fi
                             echo "Total vulnerabilities found: $AUDIT_COUNT"
                         fi
                     '''
@@ -144,7 +171,11 @@ pipeline {
                     sh '''
                         echo "🔐 Secret Detection:"
                         if [ -f "gitleaks-report.json" ]; then
-                            SECRETS_COUNT=$(cat gitleaks-report.json | jq '. | length' 2>/dev/null || echo "0")
+                            if command -v jq >/dev/null 2>&1; then
+                                SECRETS_COUNT=$(cat gitleaks-report.json | jq '. | length' 2>/dev/null || echo "0")
+                            else
+                                SECRETS_COUNT="Unknown (jq not available)"
+                            fi
                             echo "Potential secrets found: $SECRETS_COUNT"
                         fi
                     '''
