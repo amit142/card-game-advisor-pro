@@ -375,7 +375,7 @@ const Index = () => {
           className="w-full h-11 bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300 text-gray-700 font-medium rounded-xl shadow-sm transition-all duration-200"
         >
           <RotateCcw className="w-4 h-4 mr-2" />
-          Reset Game
+          NEXT ROUND
         </Button>
       </div>
     </div>
