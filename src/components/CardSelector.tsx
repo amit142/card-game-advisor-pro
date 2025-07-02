@@ -18,7 +18,8 @@ const CardSelector = ({ selectedCards, onCardsChange, maxCards, label, allSelect
   const ranks = ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2'];
 
   const getSuitColor = (suit: string) => {
-    return suit === '♥' || suit === '♦' ? 'text-red-500' : 'text-gray-900';
+    // Using text-foreground for black suits to inherit theme color
+    return suit === '♥' || suit === '♦' ? 'text-red-500 dark:text-red-400' : 'text-foreground';
   };
 
   const isCardSelected = (rank: string, suit: string) => {
@@ -59,15 +60,15 @@ const CardSelector = ({ selectedCards, onCardsChange, maxCards, label, allSelect
           return (
             <div
               key={card}
-              className="relative bg-white border-2 border-gray-200 rounded-xl p-3 shadow-sm hover:shadow-md transition-all duration-200 group"
+              className="relative bg-card border-2 border-border rounded-xl p-3 shadow-sm hover:shadow-md transition-all duration-200 group"
             >
               <div className="text-center">
-                <div className="text-lg font-semibold text-gray-900">{rank}</div>
+                <div className="text-lg font-semibold text-card-foreground">{rank}</div>
                 <div className={`text-xl ${getSuitColor(suit)}`}>{suit}</div>
               </div>
               <button
                 onClick={() => removeCard(card)}
-                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-md"
+                className="absolute -top-2 -right-2 w-6 h-6 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-md"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -80,9 +81,9 @@ const CardSelector = ({ selectedCards, onCardsChange, maxCards, label, allSelect
           <Button
             onClick={() => setIsOpen(true)}
             variant="outline"
-            className="h-[60px] w-[48px] border-2 border-dashed border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 rounded-xl transition-all duration-200"
+            className="h-[60px] w-[48px] border-2 border-dashed border-border hover:border-primary/50 bg-card hover:bg-muted/50 rounded-xl transition-all duration-200"
           >
-            <div className="text-2xl text-gray-400">+</div>
+            <div className="text-2xl text-muted-foreground">+</div>
           </Button>
         )}
       </div>
@@ -90,15 +91,16 @@ const CardSelector = ({ selectedCards, onCardsChange, maxCards, label, allSelect
       {/* Card Picker Modal - Fixed scrolling */}
       {isOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[99999]">
-          <div className="w-full max-w-lg bg-white shadow-2xl rounded-2xl max-h-[90vh] flex flex-col">
-            {/* Fixed Header */}
-            <div className="flex justify-between items-center p-6 border-b border-gray-200 bg-white rounded-t-2xl flex-shrink-0 relative z-[10000]">
-              <h3 className="text-xl font-semibold text-gray-900">Select Card</h3>
+          {/* Modal Panel */}
+          <div className="w-full max-w-lg bg-card shadow-2xl rounded-2xl max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center p-6 border-b border-border bg-card rounded-t-2xl flex-shrink-0 relative z-[10000]">
+              <h3 className="text-xl font-semibold text-card-foreground">Select Card</h3>
               <Button
                 onClick={() => setIsOpen(false)}
                 variant="ghost"
-                size="sm"
-                className="h-10 w-10 rounded-full p-0 hover:bg-gray-100"
+                size="icon" // Changed to icon for consistency with X
+                className="text-muted-foreground hover:bg-muted/50"
               >
                 <X className="w-5 h-5" />
               </Button>
@@ -122,20 +124,17 @@ const CardSelector = ({ selectedCards, onCardsChange, maxCards, label, allSelect
                             key={`${rank}${suit}`}
                             onClick={() => {
                               handleCardClick(rank, suit);
-                              if (!isSelected && selectedCards.length + 1 >= maxCards) {
+                              if (!isSelected && selectedCards.length + 1 >= maxCards && !isUnavailable) { // only close if a valid card was selected
                                 setIsOpen(false);
                               }
                             }}
-                            disabled={isSelected || isUnavailable}
+                            disabled={isUnavailable} // isSelected is handled by variant or custom class
                             variant={isSelected ? "secondary" : "outline"}
                             size="sm"
-                            className={`h-12 w-12 p-0 text-sm font-bold rounded-lg transition-all duration-200 ${
-                              isSelected
-                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                : isUnavailable
-                                ? 'bg-red-50 text-red-300 border-red-200 cursor-not-allowed opacity-50'
-                                : 'bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300 hover:shadow-md'
-                            }`}
+                            className={`h-12 w-12 p-0 text-sm font-bold rounded-lg transition-all duration-200
+                              ${isSelected ? 'opacity-70 cursor-not-allowed' : ''}
+                              ${isUnavailable ? 'opacity-50 cursor-not-allowed bg-destructive/10 border-destructive/20 text-destructive/50' : ''}
+                            `} // Rely on Button variant's default theming for non-unavailable, non-selected states.
                           >
                             {rank}
                           </Button>

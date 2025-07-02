@@ -15,7 +15,7 @@ const PokerTableDisplay: React.FC<PokerTableDisplayProps> = ({
   const availablePositions = getAvailablePositions(numberOfPlayers);
 
   if (availablePositions.length === 0) {
-    return <div className="text-center text-sm text-gray-500 py-4">Select number of opponents to see positions.</div>;
+    return <div className="text-center text-sm text-muted-foreground py-4">Select number of opponents to see positions.</div>;
   }
 
   const tableWidth = 300; // Corresponds to .poker-table width in CSS
@@ -80,7 +80,7 @@ const PokerTableDisplay: React.FC<PokerTableDisplayProps> = ({
 
   return (
     <div className="flex flex-col items-center gap-4 my-2"> {/* Added my-2 for some vertical spacing */}
-      <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+      <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
         Select Your Position
       </div>
       <div className="poker-table">
@@ -102,8 +102,8 @@ const PokerTableDisplay: React.FC<PokerTableDisplayProps> = ({
         })}
       </div>
       {currentPosition && (
-        <div className="mt-1 text-sm text-gray-700">
-          Selected: <span className="font-semibold text-gray-900">{currentPosition}</span>
+         <div className="mt-1 text-sm text-foreground">
+           Selected: <span className="font-semibold text-primary">{currentPosition}</span>
         </div>
       )}
     </div>

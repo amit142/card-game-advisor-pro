@@ -179,7 +179,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-50">
+    <div className="min-h-screen bg-background text-foreground"> {/* Use CSS variables via Tailwind utilities */}
       <div className="max-w-sm mx-auto px-4 py-6 space-y-5">
         {/* Header */}
         <div className="text-center space-y-2">
