@@ -196,30 +196,37 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+    <div className="min-h-screen bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-50">
       <div className="max-w-sm mx-auto px-4 py-6 space-y-5">
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="text-2xl">🃏</div>
           <div className="space-y-0.5">
-            <div className="text-lg font-semibold text-gray-900 tracking-tight">Poker Pro</div>
-            <div className="text-xs text-gray-500 font-medium">Advanced probability & insights</div>
+            <div className="text-lg font-semibold tracking-tight">Poker Pro</div> {/* Removed text-gray-900 */}
+            <div className="text-xs text-neutral-500 dark:text-neutral-400 font-medium">Advanced probability & insights</div>
           </div>
         </div>
 
         {/* Win Probability Display */}
-        <Card className="bg-white/90 border-0 shadow-lg shadow-black/3 rounded-2xl overflow-hidden">
+        {/* Card components by default use CSS variables for background/foreground, so they should adapt.
+            If specific text colors like text-gray-500 are used, they might need dark:text-gray-400 etc.
+            Let's assume shadcn/ui Card handles its own theming well for now.
+            The custom getProbabilityColor will need adjustment or use CSS vars if not already.
+         */}
+        <Card className="shadow-lg rounded-2xl overflow-hidden"> {/* Removed bg-white/90 border-0 shadow-black/3 */}
           <CardContent className="p-6 text-center">
             {winProbability !== null ? (
               <div className="space-y-3">
                 <div className={`text-4xl font-light tracking-tight ${getProbabilityColor(winProbability)}`}>
                   {winProbability}%
                 </div>
-                <div className="text-xs text-gray-500 font-medium tracking-wider uppercase">Win Probability</div>
-                <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                {/* text-gray-500 needs dark mode variant */}
+                <div className="text-xs text-neutral-500 dark:text-neutral-400 font-medium tracking-wider uppercase">Win Probability</div>
+                {/* bg-gray-100 needs dark mode variant */}
+                <div className="w-full bg-neutral-100 dark:bg-neutral-800 rounded-full h-1.5 overflow-hidden">
                   <div 
                     className={`h-1.5 rounded-full transition-all duration-1000 ease-out ${
-                      winProbability >= 70 ? 'bg-emerald-500' :
+                      winProbability >= 70 ? 'bg-emerald-500' : // These colors might need dark variants if too bright/dark on themes
                       winProbability >= 55 ? 'bg-blue-500' :
                       winProbability >= 40 ? 'bg-amber-500' :
                       winProbability >= 25 ? 'bg-orange-500' : 'bg-red-500'
@@ -227,17 +234,20 @@ const Index = () => {
                     style={{ width: `${winProbability}%` }}
                   />
                 </div>
-                <div className="flex justify-between text-xs text-gray-400 font-medium">
+                {/* text-gray-400 needs dark mode variant */}
+                <div className="flex justify-between text-xs text-neutral-500 dark:text-neutral-400 font-medium">
                   <span>vs {gameState.opponents} opponent{gameState.opponents > 1 ? 's' : ''}</span>
                   <span className="capitalize">{gameState.gameStage}</span>
                 </div>
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="w-12 h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
+                 {/* bg-gray-100 needs dark mode variant */}
+                <div className="w-12 h-12 mx-auto bg-neutral-100 dark:bg-neutral-800 rounded-full flex items-center justify-center">
                   <div className="text-lg">🎯</div>
                 </div>
-                <div className="text-sm text-gray-500 font-medium">Select your cards</div>
+                 {/* text-gray-500 needs dark mode variant */}
+                <div className="text-sm text-neutral-500 dark:text-neutral-400 font-medium">Select your cards</div>
               </div>
             )}
           </CardContent>
@@ -247,36 +257,47 @@ const Index = () => {
         {insights.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center gap-2 px-1">
-              <div className="text-sm font-semibold text-gray-700">💡 Smart Insights</div>
-              <div className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+               {/* text-gray-700 needs dark mode variant */}
+              <div className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">💡 Smart Insights</div>
+              {/* bg-gray-100 and text-gray-400 need dark mode variants */}
+              <div className="text-xs text-neutral-500 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded-full">
                 {insights.length}
               </div>
             </div>
             <div className="space-y-2">
               {insights.map((insight, index) => (
+                // Assuming Card handles its own theming. getInsightBgColor might need to be theme-aware or Card's variant used.
+                // For now, removing direct bg color from Card if it uses CSS vars by default.
                 <Card 
                   key={index}
-                  className={`${getInsightBgColor(insight.type)} shadow-sm rounded-xl overflow-hidden`}
+                  // className={`${getInsightBgColor(insight.type)} shadow-sm rounded-xl overflow-hidden`}
+                  // Rely on Card's default theming, or update getInsightBgColor
+                  // Forcing a general card style for now, specific insight colors can be refined.
+                  className="shadow-sm rounded-xl overflow-hidden"
                 >
                   <CardContent className="p-3">
                     <div className="flex items-start gap-3">
                       <div className="mt-0.5 flex items-center gap-1">
                         <span className="text-sm">{getCategoryIcon(insight.category)}</span>
-                        {getInsightIcon(insight.type)}
+                        {getInsightIcon(insight.type)} {/* Ensure icons are theme-aware or use CSS for color */}
                       </div>
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center justify-between">
-                          <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                           {/* text-gray-500 needs dark mode variant */}
+                          <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                             {insight.category}
                           </div>
-                          <div className="text-xs text-gray-400 font-medium">
+                          {/* text-gray-400 needs dark mode variant */}
+                          <div className="text-xs text-neutral-500 dark:text-neutral-400 font-medium">
                             Priority: {insight.priority}/10
                           </div>
                         </div>
-                        <div className="font-medium text-gray-900 text-sm leading-snug">
+                        {/* text-gray-900 needs dark mode variant */}
+                        <div className="font-medium text-neutral-900 dark:text-neutral-100 text-sm leading-snug">
                           {insight.message}
                         </div>
-                        <div className="text-gray-600 text-xs leading-relaxed">
+                        {/* text-gray-600 needs dark mode variant */}
+                        <div className="text-neutral-600 dark:text-neutral-300 text-xs leading-relaxed">
                           {insight.recommendation}
                         </div>
                       </div>
@@ -289,9 +310,10 @@ const Index = () => {
         )}
 
         {/* Hole Cards */}
-        <Card className="bg-white/90 border-0 shadow-lg shadow-black/3 rounded-2xl">
+        <Card className="shadow-lg rounded-2xl"> {/* Removed bg-white/90 border-0 shadow-black/3 */}
           <CardContent className="p-5">
-            <div className="text-sm font-semibold text-gray-700 mb-3">Your Cards</div>
+            {/* text-gray-700 needs dark mode variant */}
+            <div className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">Your Cards</div>
             <CardSelector
               selectedCards={gameState.holeCards}
               onCardsChange={(cards) => setGameState(prev => ({ ...prev, holeCards: cards }))}
