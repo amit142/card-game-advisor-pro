@@ -50,6 +50,7 @@ export const getAvailablePositions = (numberOfPlayers: number): string[] => {
 import CardSelector from '@/components/CardSelector';
 import PositionSelector from '@/components/PositionSelector';
 import GameStage from '@/components/GameStage';
+
 import { RotateCcw, TrendingUp, AlertTriangle, Target, Users, Trash2, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { calculateWinProbability } from '@/utils/pokerCalculator';
 import { generatePokerInsights, type Insight } from '@/utils/pokerInsights';
@@ -179,6 +180,7 @@ const Index = () => {
       gameStage: 'preflop',
       bettingHistory: [],
       roundOutcomes: [], // Clear round outcomes on hard reset
+
     });
     setWinProbability(null);
     setInsights([]);
@@ -425,6 +427,7 @@ const Index = () => {
             onClick={resetGame}
             variant="outline"
             className="h-11 bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300 text-gray-700 font-medium rounded-xl shadow-sm transition-all duration-200"
+
           >
             <RotateCcw className="w-4 h-4 mr-2" />
             NEXT ROUND

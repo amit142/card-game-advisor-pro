@@ -1,6 +1,8 @@
 pipeline {
-    agent any
-    
+    agent {
+        label 'docker'  // Use the label you assigned to your Docker slave
+    }
+
     environment {
         DOCKER_IMAGE_NAME = "poker_app"
         DOCKER_IMAGE_TAG = "${BUILD_NUMBER}"
@@ -19,6 +21,18 @@ pipeline {
     }
     
     stages {
+        stage('Verify Agent') {
+            steps {
+                script {
+                    echo "Running on agent: ${env.NODE_NAME}"
+                    echo "Agent labels: ${env.NODE_LABELS}"
+                    echo "Workspace: ${env.WORKSPACE}"
+                    sh 'hostname'
+                    sh 'whoami'
+                    sh 'pwd'
+                }
+            }
+        }
         stage('Checkout') {
             steps {
                 checkout([
