@@ -196,7 +196,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+    <div className="min-h-screen bg-background text-foreground"> {/* CORRECTED: Use theme variables */}
       <div className="max-w-sm mx-auto px-4 py-6 space-y-5">
         {/* Header */}
         <div className="text-center space-y-2">

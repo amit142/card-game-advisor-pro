@@ -192,6 +192,7 @@ All colors MUST be HSL.
   }
 
   body {
+    background-image: none; /* Explicitly remove any background image */
     @apply bg-background text-foreground;
   }
 }
