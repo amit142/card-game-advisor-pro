@@ -50,7 +50,7 @@ export const getAvailablePositions = (numberOfPlayers: number): string[] => {
 import CardSelector from '@/components/CardSelector';
 import PositionSelector from '@/components/PositionSelector';
 import GameStage from '@/components/GameStage';
-import { RotateCcw, TrendingUp, AlertTriangle, Target, Users } from 'lucide-react';
+import { RotateCcw, TrendingUp, AlertTriangle, Target, Users, Trash2 } from 'lucide-react';
 import { calculateWinProbability } from '@/utils/pokerCalculator';
 import { generatePokerInsights, type Insight } from '@/utils/pokerInsights';
 
@@ -89,6 +89,19 @@ const Index = () => {
   useEffect(() => {
     localStorage.setItem('opponents', gameState.opponents.toString());
   }, [gameState.opponents]);
+
+  // Automatic game stage advancement
+  useEffect(() => {
+    const { holeCards, communityCards, gameStage } = gameState;
+
+    if (holeCards.length === 2 && gameStage === 'preflop') {
+      setGameState(prev => ({ ...prev, gameStage: 'flop' }));
+    } else if (holeCards.length === 2 && communityCards.length === 3 && gameStage === 'flop') {
+      setGameState(prev => ({ ...prev, gameStage: 'turn' }));
+    } else if (holeCards.length === 2 && communityCards.length === 4 && gameStage === 'turn') {
+      setGameState(prev => ({ ...prev, gameStage: 'river' }));
+    }
+  }, [gameState.holeCards, gameState.communityCards, gameState.gameStage]);
 
   // Enhanced live calculation with improved algorithm
   useEffect(() => {
@@ -152,6 +165,22 @@ const Index = () => {
 
     setWinProbability(null);
     setInsights([]);
+  };
+
+  const hardResetGame = () => {
+    setGameState({
+      holeCards: [],
+      communityCards: [],
+      position: 'SB', // Default for 5 players (Hero + 4 opponents)
+      opponents: 4,    // Default opponents
+      potSize: 0,
+      gameStage: 'preflop',
+      bettingHistory: []
+    });
+    setWinProbability(null);
+    setInsights([]);
+    // Ensure localStorage for opponents is also updated to the default
+    localStorage.setItem('opponents', '4');
   };
 
   const getProbabilityColor = (prob: number) => {
@@ -355,15 +384,25 @@ const Index = () => {
           </CardContent>
         </Card>
 
-        {/* Reset Button */}
-        <Button
-          onClick={resetGame}
-          variant="outline"
-          className="w-full h-11 bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300 text-gray-700 font-medium rounded-xl shadow-sm transition-all duration-200"
-        >
-          <RotateCcw className="w-4 h-4 mr-2" />
-          Reset Game
-        </Button>
+        {/* Action Buttons */}
+        <div className="flex gap-2">
+          <Button
+            onClick={resetGame}
+            variant="outline"
+            className="flex-1 h-11 bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300 text-gray-700 font-medium rounded-xl shadow-sm transition-all duration-200"
+          >
+            <RotateCcw className="w-4 h-4 mr-2" />
+            NEXT ROUND
+          </Button>
+          <Button
+            onClick={hardResetGame}
+            variant="destructive"
+            className="flex-1 h-11 font-medium rounded-xl shadow-sm transition-all duration-200"
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            RESET
+          </Button>
+        </div>
       </div>
     </div>
   );
