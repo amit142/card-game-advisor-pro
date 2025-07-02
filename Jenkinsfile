@@ -21,6 +21,11 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
+                checkout([
+                    $class: 'GitSCM', 
+                    branches: [[name: '*/main']], 
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/amit142/card-game-advisor-pro'
                     ]],
                     extensions: [
                         [$class: 'CleanBeforeCheckout'],
@@ -30,26 +35,6 @@ pipeline {
             }
         }
 
-        
-        
-        stage('Pre-build Checks') {
-            steps {
-                script {
-                    // Verify Dockerfile exists
-                    if (!fileExists('Dockerfile')) {
-                        error('Dockerfile not found in repository root')
-                    }
-                    
-                    // Check Docker daemon
-                    sh 'docker --version'
-                    sh 'docker info'
-                    
-                    echo "Current user: \$(whoami)"
-                    echo "Workspace: ${WORKSPACE}"
-                    echo "Build number: ${BUILD_NUMBER}"
-                }
-            }
-        }
         stage('Install Dependencies') {
             steps {
                 sh 'npm ci'
@@ -166,27 +151,26 @@ pipeline {
                 }
             }
         }
-    }
-    
-    post {
-        always {
-            // Clean up downloaded tools
-            sh 'rm -f gitleaks'
+        
+        stage('Pre-build Checks') {
+            steps {
+                script {
+                    // Verify Dockerfile exists
+                    if (!fileExists('Dockerfile')) {
+                        error('Dockerfile not found in repository root')
+                    }
+                    
+                    // Check Docker daemon
+                    sh 'docker --version'
+                    sh 'docker info'
+                    
+                    echo "Current user: \$(whoami)"
+                    echo "Workspace: ${WORKSPACE}"
+                    echo "Build number: ${BUILD_NUMBER}"
+                }
+            }
         }
         
-        unstable {
-            echo '⚠️  Build completed with warnings - secrets detected!'
-        }
-        
-        failure {
-            echo '❌ Build failed - check TypeScript compilation errors'
-        }
-        
-        success {
-            echo '✅ All checks passed successfully!'
-        }
-    }
-
         stage('Build Docker Image') {
             steps {
                 script {
