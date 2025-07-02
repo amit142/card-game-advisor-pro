@@ -35,7 +35,7 @@ pipeline {
             }
         }
 
-        tage('Install Dependencies') {
+        stage('Install Dependencies') {
             steps {
                 sh 'npm ci'
             }
