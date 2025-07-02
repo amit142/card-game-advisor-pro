@@ -50,7 +50,7 @@ export const getAvailablePositions = (numberOfPlayers: number): string[] => {
 import CardSelector from '@/components/CardSelector';
 import PositionSelector from '@/components/PositionSelector';
 import GameStage from '@/components/GameStage';
-import { RotateCcw, TrendingUp, AlertTriangle, Target, Users } from 'lucide-react';
+import { RotateCcw, TrendingUp, AlertTriangle, Target, Users, Trash2, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { calculateWinProbability } from '@/utils/pokerCalculator';
 import { generatePokerInsights, type Insight } from '@/utils/pokerInsights';
 
@@ -62,6 +62,7 @@ interface GameState {
   potSize: number;
   gameStage: 'preflop' | 'flop' | 'turn' | 'river';
   bettingHistory: string[];
+  roundOutcomes: Array<'win' | 'lose'>;
 }
 
 const Index = () => {
@@ -75,7 +76,8 @@ const Index = () => {
       opponents: initialOpponents,
       potSize: 0,
       gameStage: 'preflop',
-      bettingHistory: []
+      bettingHistory: [],
+      roundOutcomes: [],
     };
   });
 
@@ -89,6 +91,19 @@ const Index = () => {
   useEffect(() => {
     localStorage.setItem('opponents', gameState.opponents.toString());
   }, [gameState.opponents]);
+
+  // Automatic game stage advancement
+  useEffect(() => {
+    const { holeCards, communityCards, gameStage } = gameState;
+
+    if (holeCards.length === 2 && gameStage === 'preflop') {
+      setGameState(prev => ({ ...prev, gameStage: 'flop' }));
+    } else if (holeCards.length === 2 && communityCards.length === 3 && gameStage === 'flop') {
+      setGameState(prev => ({ ...prev, gameStage: 'turn' }));
+    } else if (holeCards.length === 2 && communityCards.length === 4 && gameStage === 'turn') {
+      setGameState(prev => ({ ...prev, gameStage: 'river' }));
+    }
+  }, [gameState.holeCards, gameState.communityCards, gameState.gameStage]);
 
   // Enhanced live calculation with improved algorithm
   useEffect(() => {
@@ -152,6 +167,39 @@ const Index = () => {
 
     setWinProbability(null);
     setInsights([]);
+  };
+
+  const hardResetGame = () => {
+    setGameState({
+      holeCards: [],
+      communityCards: [],
+      position: 'SB', // Default for 5 players (Hero + 4 opponents)
+      opponents: 4,    // Default opponents
+      potSize: 0,
+      gameStage: 'preflop',
+      bettingHistory: [],
+      roundOutcomes: [], // Clear round outcomes on hard reset
+    });
+    setWinProbability(null);
+    setInsights([]);
+    // Ensure localStorage for opponents is also updated to the default
+    localStorage.setItem('opponents', '4');
+  };
+
+  const handleWin = () => {
+    setGameState(prev => ({
+      ...prev,
+      roundOutcomes: [...prev.roundOutcomes, 'win'],
+    }));
+    resetGame(); // Proceed to next round
+  };
+
+  const handleLose = () => {
+    setGameState(prev => ({
+      ...prev,
+      roundOutcomes: [...prev.roundOutcomes, 'lose'],
+    }));
+    resetGame(); // Proceed to next round
   };
 
   const getProbabilityColor = (prob: number) => {
@@ -355,15 +403,41 @@ const Index = () => {
           </CardContent>
         </Card>
 
-        {/* Reset Button */}
-        <Button
-          onClick={resetGame}
-          variant="outline"
-          className="w-full h-11 bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300 text-gray-700 font-medium rounded-xl shadow-sm transition-all duration-200"
-        >
-          <RotateCcw className="w-4 h-4 mr-2" />
-          Reset Game
-        </Button>
+        {/* Action Buttons */}
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            onClick={handleWin}
+            variant="outline"
+            className="h-11 font-medium rounded-xl shadow-sm transition-all duration-200 border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600"
+          >
+            <ThumbsUp className="w-4 h-4 mr-2" />
+            WIN
+          </Button>
+          <Button
+            onClick={handleLose}
+            variant="outline"
+            className="h-11 font-medium rounded-xl shadow-sm transition-all duration-200 border-orange-500 text-orange-500 hover:bg-orange-50 hover:text-orange-600"
+          >
+            <ThumbsDown className="w-4 h-4 mr-2" />
+            LOSE
+          </Button>
+          <Button
+            onClick={resetGame}
+            variant="outline"
+            className="h-11 bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300 text-gray-700 font-medium rounded-xl shadow-sm transition-all duration-200"
+          >
+            <RotateCcw className="w-4 h-4 mr-2" />
+            NEXT ROUND
+          </Button>
+          <Button
+            onClick={hardResetGame}
+            variant="destructive"
+            className="h-11 font-medium rounded-xl shadow-sm transition-all duration-200"
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            RESET
+          </Button>
+        </div>
       </div>
     </div>
   );
