@@ -196,7 +196,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+    <div className="min-h-screen bg-background text-foreground"> {/* CORRECTED: Use theme variables */}
       <div className="max-w-sm mx-auto px-4 py-6 space-y-5">
         {/* Header */}
         <div className="text-center space-y-2">
@@ -333,10 +333,11 @@ const Index = () => {
                     variant={gameState.opponents === num ? "default" : "outline"}
                     size="sm"
                     onClick={() => setGameState(prev => ({ ...prev, opponents: num }))}
+                    // Base classes for layout, plus specific dark mode overrides for the outline (unselected) state
                     className={`h-9 rounded-lg font-medium transition-all duration-200 ${
-                      gameState.opponents === num 
-                        ? "bg-blue-500 hover:bg-blue-600 text-white shadow-md border-0" 
-                        : "bg-white hover:bg-gray-50 text-gray-700 border-gray-200 hover:border-gray-300"
+                      gameState.opponents !== num
+                        ? 'dark:bg-neutral-700 dark:text-neutral-200 dark:border-neutral-600 dark:hover:bg-neutral-600'
+                        : '' // The 'default' variant (selected) should handle its own dark theming
                     }`}
                   >
                     {num}
