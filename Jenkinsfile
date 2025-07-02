@@ -1,8 +1,6 @@
 pipeline {
-    agent {
-        label 'docker'  // Use the label you assigned to your Docker slave
-    }
-
+    agent any
+    
     environment {
         DOCKER_IMAGE_NAME = "poker_app"
         DOCKER_IMAGE_TAG = "${BUILD_NUMBER}"
@@ -21,18 +19,6 @@ pipeline {
     }
     
     stages {
-        stage('Verify Agent') {
-            steps {
-                script {
-                    echo "Running on agent: ${env.NODE_NAME}"
-                    echo "Agent labels: ${env.NODE_LABELS}"
-                    echo "Workspace: ${env.WORKSPACE}"
-                    sh 'hostname'
-                    sh 'whoami'
-                    sh 'pwd'
-                }
-            }
-        }
         stage('Checkout') {
             steps {
                 checkout([
@@ -46,6 +32,123 @@ pipeline {
                         [$class: 'CloneOption', depth: 1, shallow: true]
                     ]
                 ])
+            }
+        }
+
+        tage('Install Dependencies') {
+            steps {
+                sh 'npm ci'
+            }
+        }
+        
+        stage('TypeScript Compilation Check') {
+            steps {
+                script {
+                    echo 'Running TypeScript compiler checks...'
+                    sh 'npx tsc --noEmit --pretty'
+                }
+            }
+        }
+        
+        stage('Security Scanning') {
+            parallel {
+                stage('npm audit') {
+                    steps {
+                        script {
+                            echo 'Scanning for vulnerable dependencies...'
+                            // Run npm audit and capture output
+                            def auditResult = sh(
+                                script: 'npm audit --audit-level=moderate --json > npm-audit-report.json 2>&1 || true',
+                                returnStatus: true
+                            )
+                            
+                            // Archive the report
+                            archiveArtifacts artifacts: 'npm-audit-report.json', allowEmptyArchive: true
+                            
+                            // Display summary
+                            sh '''
+                                echo "=== npm audit Summary ==="
+                                npm audit --audit-level=moderate || echo "Vulnerabilities found - check archived report"
+                            '''
+                        }
+                    }
+                }
+                
+                stage('GitLeaks Secret Detection') {
+                    steps {
+                        script {
+                            echo 'Scanning for secrets and sensitive information...'
+                            
+                            // Download and install GitLeaks
+                            sh '''
+                                # Download GitLeaks if not already present
+                                if [ ! -f "./gitleaks" ]; then
+                                    echo "Downloading GitLeaks..."
+                                    GITLEAKS_VERSION=$(curl -s https://api.github.com/repos/zricethezav/gitleaks/releases/latest | grep tag_name | cut -d '"' -f 4)
+                                    wget -q "https://github.com/zricethezav/gitleaks/releases/download/${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION#v}_linux_x64.tar.gz"
+                                    tar -xzf "gitleaks_${GITLEAKS_VERSION#v}_linux_x64.tar.gz"
+                                    chmod +x gitleaks
+                                    rm "gitleaks_${GITLEAKS_VERSION#v}_linux_x64.tar.gz"
+                                fi
+                            '''
+                            
+                            // Run GitLeaks scan
+                            def gitleaksResult = sh(
+                                script: './gitleaks detect --report-format json --report-path gitleaks-report.json --verbose || true',
+                                returnStatus: true
+                            )
+                            
+                            // Archive the report
+                            archiveArtifacts artifacts: 'gitleaks-report.json', allowEmptyArchive: true
+                            
+                            // Check results and fail if secrets found
+                            script {
+                                if (gitleaksResult == 1) {
+                                    echo "⚠️  SECRETS DETECTED! Check the GitLeaks report."
+                                    sh 'cat gitleaks-report.json'
+                                    currentBuild.result = 'UNSTABLE'
+                                } else {
+                                    echo "✅ No secrets detected by GitLeaks"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Build') {
+            steps {
+                script {
+                    echo 'Building TypeScript project...'
+                    sh 'npx tsc'
+                }
+            }
+        }
+        
+        stage('Security Summary') {
+            steps {
+                script {
+                    echo '=== Security Scan Summary ==='
+                    
+                    // npm audit summary
+                    sh '''
+                        echo "📦 Dependency Vulnerabilities:"
+                        if [ -f "npm-audit-report.json" ]; then
+                            AUDIT_COUNT=$(cat npm-audit-report.json | jq -r '.metadata.vulnerabilities.total // 0' 2>/dev/null || echo "0")
+                            echo "Total vulnerabilities found: $AUDIT_COUNT"
+                        fi
+                    '''
+                    
+                    // GitLeaks summary
+                    sh '''
+                        echo "🔐 Secret Detection:"
+                        if [ -f "gitleaks-report.json" ]; then
+                            SECRETS_COUNT=$(cat gitleaks-report.json | jq '. | length' 2>/dev/null || echo "0")
+                            echo "Potential secrets found: $SECRETS_COUNT"
+                        fi
+                    '''
+                }
             }
         }
         
