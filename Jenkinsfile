@@ -21,11 +21,6 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                checkout([
-                    $class: 'GitSCM', 
-                    branches: [[name: '*/main']], 
-                    userRemoteConfigs: [[
-                        url: 'https://github.com/amit142/card-game-advisor-pro'
                     ]],
                     extensions: [
                         [$class: 'CleanBeforeCheckout'],
@@ -35,6 +30,26 @@ pipeline {
             }
         }
 
+        
+        
+        stage('Pre-build Checks') {
+            steps {
+                script {
+                    // Verify Dockerfile exists
+                    if (!fileExists('Dockerfile')) {
+                        error('Dockerfile not found in repository root')
+                    }
+                    
+                    // Check Docker daemon
+                    sh 'docker --version'
+                    sh 'docker info'
+                    
+                    echo "Current user: \$(whoami)"
+                    echo "Workspace: ${WORKSPACE}"
+                    echo "Build number: ${BUILD_NUMBER}"
+                }
+            }
+        }
         stage('Install Dependencies') {
             steps {
                 sh 'npm ci'
@@ -73,72 +88,47 @@ pipeline {
                         }
                     }
                 }
-            }
-
-            stage('GitLeaks Secret Detection') {
-                steps {
-                    script {
-                        echo 'Scanning for secrets and sensitive information...'
-
-                        // Download and install GitLeaks
-            sh '''
-                # Ensure curl and wget are available
-                if ! command -v curl &> /dev/null; then
-                    echo "curl is not installed. Installing..."
-                    apt-get update && apt-get install -y curl
-                fi
-
-                if ! command -v wget &> /dev/null; then
-                    echo "wget is not installed. Installing..."
-                    apt-get update && apt-get install -y wget
-                fi
-
-                # Fetch the latest GitLeaks release version
-                GITLEAKS_VERSION=$(curl -sL https://api.github.com/repos/zricethezav/gitleaks/releases/latest | grep '"tag_name":' | cut -d '"' -f 4)
                 
-                # Validate the version
-                if [ -z "$GITLEAKS_VERSION" ]; then
-                    echo "Failed to retrieve GitLeaks version"
-                    exit 1
-                fi
-
-                # Remove 'v' prefix if present
-                GITLEAKS_VERSION_CLEAN=$(echo "$GITLEAKS_VERSION" | sed 's/^v//')
-
-                # Download GitLeaks
-                echo "Downloading GitLeaks version: $GITLEAKS_VERSION"
-                wget -q "https://github.com/zricethezav/gitleaks/releases/download/${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION_CLEAN}_linux_x64.tar.gz"
-                
-                # Extract and make executable
-                tar -xzf "gitleaks_${GITLEAKS_VERSION_CLEAN}_linux_x64.tar.gz"
-                chmod +x gitleaks
-
-                # Clean up downloaded archive
-                rm "gitleaks_${GITLEAKS_VERSION_CLEAN}_linux_x64.tar.gz"
-            '''
-            
-            // Run GitLeaks scan
-            def gitleaksResult = sh(
-                script: './gitleaks detect --report-format json --report-path gitleaks-report.json --verbose || true',
-                returnStatus: true
-            )
-            
-            // Archive the report
-            archiveArtifacts artifacts: 'gitleaks-report.json', allowEmptyArchive: true
-            
-            // Check results and fail if secrets found
-            script {
-                if (gitleaksResult == 1) {
-                    echo "⚠️  SECRETS DETECTED! Check the GitLeaks report."
-                    sh 'cat gitleaks-report.json'
-                    currentBuild.result = 'UNSTABLE'
-                } else {
-                    echo "✅ No secrets detected by GitLeaks"
+                stage('GitLeaks Secret Detection') {
+                    steps {
+                        script {
+                            echo 'Scanning for secrets and sensitive information...'
+                            
+                            // Download and install GitLeaks
+                            sh '''
+                                # Download GitLeaks if not already present
+                                if [ ! -f "./gitleaks" ]; then
+                                    echo "Downloading GitLeaks..."
+                                    GITLEAKS_VERSION=$(curl -s https://api.github.com/repos/zricethezav/gitleaks/releases/latest | grep tag_name | cut -d '"' -f 4)
+                                    wget -q "https://github.com/zricethezav/gitleaks/releases/download/${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION#v}_linux_x64.tar.gz"
+                                    tar -xzf "gitleaks_${GITLEAKS_VERSION#v}_linux_x64.tar.gz"
+                                    chmod +x gitleaks
+                                    rm "gitleaks_${GITLEAKS_VERSION#v}_linux_x64.tar.gz"
+                                fi
+                            '''
+                            
+                            // Run GitLeaks scan
+                            def gitleaksResult = sh(
+                                script: './gitleaks detect --report-format json --report-path gitleaks-report.json --verbose || true',
+                                returnStatus: true
+                            )
+                            
+                            // Archive the report
+                            archiveArtifacts artifacts: 'gitleaks-report.json', allowEmptyArchive: true
+                            
+                            // Check results and fail if secrets found
+                            script {
+                                if (gitleaksResult == 1) {
+                                    echo "⚠️  SECRETS DETECTED! Check the GitLeaks report."
+                                    sh 'cat gitleaks-report.json'
+                                    currentBuild.result = 'UNSTABLE'
+                                } else {
+                                    echo "✅ No secrets detected by GitLeaks"
+                                }
+                            }
+                        }
+                    }
                 }
-            }
-        }
-    }
-}
             }
         }
         
@@ -176,26 +166,27 @@ pipeline {
                 }
             }
         }
-        
-        stage('Pre-build Checks') {
-            steps {
-                script {
-                    // Verify Dockerfile exists
-                    if (!fileExists('Dockerfile')) {
-                        error('Dockerfile not found in repository root')
-                    }
-                    
-                    // Check Docker daemon
-                    sh 'docker --version'
-                    sh 'docker info'
-                    
-                    echo "Current user: \$(whoami)"
-                    echo "Workspace: ${WORKSPACE}"
-                    echo "Build number: ${BUILD_NUMBER}"
-                }
-            }
+    }
+    
+    post {
+        always {
+            // Clean up downloaded tools
+            sh 'rm -f gitleaks'
         }
         
+        unstable {
+            echo '⚠️  Build completed with warnings - secrets detected!'
+        }
+        
+        failure {
+            echo '❌ Build failed - check TypeScript compilation errors'
+        }
+        
+        success {
+            echo '✅ All checks passed successfully!'
+        }
+    }
+
         stage('Build Docker Image') {
             steps {
                 script {
