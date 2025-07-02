@@ -55,7 +55,7 @@ const GameStage = ({ gameState, onGameStateChange, allSelectedCards }: GameStage
     <div className="space-y-6">
       {/* Stage Selector */}
       <div className="space-y-3">
-        <div className="text-sm font-semibold text-foreground">Board</div>
+        <div className="text-sm font-semibold text-foreground">Board</div> {/* Themed */}
         <div className="flex gap-2">
           {stages.map(stage => (
             <Button
@@ -65,8 +65,8 @@ const GameStage = ({ gameState, onGameStateChange, allSelectedCards }: GameStage
               onClick={() => setGameStage(stage.name as any)}
               className={`h-10 text-xs font-medium rounded-lg transition-all duration-200 flex-1 ${
                 gameState.gameStage !== stage.name
-                  ? 'dark:bg-neutral-800 dark:text-neutral-200 dark:border-neutral-700 dark:hover:bg-neutral-700'
-                  : '' // Default variant handles selected state
+                  ? 'dark:bg-neutral-700 dark:text-neutral-200 dark:border-neutral-600 dark:hover:bg-neutral-600'
+                  : '' // Selected 'default' variant handles its own dark theming
               }`}
             >
               {stage.label}
@@ -87,7 +87,7 @@ const GameStage = ({ gameState, onGameStateChange, allSelectedCards }: GameStage
       )}
 
       {gameState.gameStage === 'preflop' && (
-        <div className="text-center text-muted-foreground py-6 text-sm font-medium">
+        <div className="text-center text-muted-foreground py-6 text-sm font-medium"> {/* Themed */}
           No community cards yet
         </div>
       )}

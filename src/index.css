@@ -9,15 +9,15 @@
   align-items: center;
   width: 300px; /* Increased size slightly */
   height: 180px; /* Increased size slightly */
-  background-color: var(--poker-table-bg, hsl(120, 100%, 20%)); /* Default green */
+  background-color: var(--poker-table-bg);
   border-radius: 90px; /* More pronounced oval shape */
   border-width: 8px;
   border-style: solid;
-  border-color: var(--poker-table-border, hsl(30, 56%, 40%)); /* Default brown */
+  border-color: var(--poker-table-border);
   position: relative; /* Crucial for positioning seats absolutely within it */
   margin: 25px auto;
-  box-shadow: 0 6px 12px var(--poker-table-shadow-outer, rgba(0,0,0,0.3)),
-              inset 0 0 15px var(--poker-table-shadow-inner, rgba(0,0,0,0.4));
+  box-shadow: 0 6px 12px var(--poker-table-shadow-outer),
+              inset 0 0 15px var(--poker-table-shadow-inner);
 }
 
 .poker-seat {
@@ -31,25 +31,25 @@
   font-weight: 500;
   border-radius: 6px;
   position: absolute; /* Seats will be positioned absolutely by the component */
-  box-shadow: 0 2px 4px var(--poker-seat-shadow, rgba(0,0,0,0.2));
+  box-shadow: 0 2px 4px var(--seat-shadow);
   transition: transform 0.2s ease-out, box-shadow 0.2s ease-out; /* Smooth transitions */
   cursor: pointer;
-  background-color: var(--seat-bg, hsl(220, 13%, 96%)); /* Default light gray */
-  border: 1px solid var(--seat-border, hsl(220, 14%, 83%)); /* Default light border */
-  color: var(--seat-text, hsl(220, 10%, 30%)); /* Default dark text */
+  background-color: var(--seat-bg);
+  border: 1px solid var(--seat-border);
+  color: var(--seat-text);
 }
 
 .poker-seat:hover {
-  border-color: var(--seat-border-hover, hsl(220, 10%, 65%)); /* Default darker gray */
-  box-shadow: 0 3px 6px var(--poker-seat-shadow-hover, rgba(0,0,0,0.25));
+  border-color: var(--seat-border-hover);
+  box-shadow: 0 3px 6px var(--seat-shadow-hover);
 }
 
 /* Styling for the currently selected seat (will be Tailwind Button 'default' like) */
 .poker-seat.selected {
-  background-color: var(--primary); /* Use theme's primary color */
-  color: var(--primary-foreground); /* Use theme's primary foreground text */
+  background-color: var(--primary);
+  color: var(--primary-foreground);
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px hsla(var(--primary-raw), 0.4), 0 3px 6px rgba(0,0,0,0.3); /* Ring and shadow, assuming --primary-raw is defined or adjust */
+  box-shadow: 0 0 0 3px hsla(var(--primary-raw), 0.4), 0 3px 6px var(--seat-shadow-hover); /* Use hover shadow for consistency or define new */
   font-weight: 600;
 }
 
@@ -89,24 +89,29 @@ All colors MUST be HSL.
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
-    /* HSL version of primary for ring alpha */
-    --primary-raw: 222.2 47.4% 11.2%;
-
+    --primary-raw: 222.2 47.4% 11.2%; /* For hsla ring */
 
     --radius: 0.5rem;
 
     /* Poker table specific light theme vars */
-    --poker-table-bg: hsl(120, 60%, 25%); /* Darker green */
-    --poker-table-border: hsl(30, 56%, 40%); /* SaddleBrown */
+    --poker-table-bg: hsl(120, 100%, 19.6%); /* #006400 */
+    --poker-table-border: hsl(30, 67.7%, 30.6%); /* #8B4513 */
     --poker-table-shadow-outer: rgba(0,0,0,0.3);
     --poker-table-shadow-inner: rgba(0,0,0,0.4);
 
-    --seat-bg: hsl(220, 13%, 96%); /* gray-100 like */
-    --seat-border: hsl(220, 14%, 83%); /* gray-300 like */
-    --seat-text: hsl(220, 10%, 30%); /* gray-700 like */
-    --seat-border-hover: hsl(220, 10%, 65%); /* gray-400 like */
-    --poker-seat-shadow: rgba(0,0,0,0.2);
-    --poker-seat-shadow-hover: rgba(0,0,0,0.25);
+    --seat-bg: hsl(220, 13%, 96%); /* #f3f4f6 */
+    --seat-border: hsl(220, 14%, 83%); /* #d1d5db */
+    --seat-text: hsl(220, 10%, 30%); /* #374151 */
+    --seat-shadow: rgba(0,0,0,0.2);
+
+    --seat-border-hover: hsl(220, 10%, 65%); /* #9ca3af */
+    --seat-shadow-hover: rgba(0,0,0,0.25);
+
+    /* Selected seat uses primary colors by default now in the rule */
+    /* --seat-selected-bg: hsl(221, 89%, 60%); /* #3b82f6 */
+    /* --seat-selected-text: hsl(0, 0%, 100%); /* white */
+    /* --seat-selected-shadow-ring: hsla(var(--primary-raw), 0.4); */
+    /* --seat-selected-shadow-main: rgba(0,0,0,0.3); */
 
 
     --sidebar-background: 0 0% 98%;
@@ -127,69 +132,56 @@ All colors MUST be HSL.
   }
 
   .dark {
-    /* New dark theme base colors based on #35373e */
-    --background: 228 5% 23%; /* approx #35373e */
-    --foreground: 210 40% 98%; /* light text */
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
 
-    --card: 228 5% 28%; /* slightly lighter than background */
-    --card-foreground: 210 40% 98%; /* light text for cards */
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 228 5% 26%; /* similar to card, can be adjusted */
+    --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    /* Primary colors - assuming white/light text on dark primary for accessibility */
-    /* These might need more adjustment based on desired primary color for dark theme */
-    --primary: 210 40% 98%; /* light primary color text/fill */
-    --primary-foreground: 228 5% 23%; /* dark background for primary elements if primary is light */
-    /* Or, if primary itself should be a color: e.g. a dark blue */
-    /* --primary: 217.2 91.2% 59.8%; (like shadcn default dark blue) */
-    /* --primary-foreground: 210 40% 98%; (light text on dark blue primary) */
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
 
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
 
-    /* Secondary colors - typically a bit more subdued */
-    --secondary: 228 5% 33%; /* darker gray */
-    --secondary-foreground: 210 40% 90%; /* slightly dimmer light text */
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
 
-    /* Muted colors - for less emphasis */
-    --muted: 228 5% 33%;
-    --muted-foreground: 210 40% 70%; /* even dimmer text */
-
-    /* Accent colors - for highlights, can be similar to primary or a distinct color */
-    --accent: 228 5% 38%; /* a lighter gray accent */
+    --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 62.8% 45%; /* slightly adjusted for dark background */
-    --destructive-foreground: 0 0% 100%; /* white text on destructive */
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 228 5% 33%; /* subtle border */
-    --input: 228 5% 33%;  /* input background, same as border */
-    --ring: 210 40% 70%;  /* ring color, often a lighter shade of primary or accent */
-    /* HSL version of primary for ring alpha - dark theme uses light primary */
-    --primary-raw: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
 
+    /* Dark theme poker variables */
+    --primary-raw: 210 40% 98%; /* For hsla ring for dark theme primary */
+    --poker-table-bg: hsl(228, 5%, 18%);
+    --poker-table-border: hsl(228, 5%, 40%);
+    --poker-table-shadow-outer: rgba(0,0,0,0.5);
+    --poker-table-shadow-inner: rgba(0,0,0,0.6);
+    --seat-bg: hsl(228, 5%, 45%);
+    --seat-border: hsl(228, 5%, 55%);
+    --seat-text: hsl(210, 40%, 90%);
+    --seat-shadow: rgba(0,0,0,0.3);
+    --seat-border-hover: hsl(228, 5%, 65%);
+    --seat-shadow-hover: rgba(0,0,0,0.4);
+    /* Selected seat uses var(--primary) and var(--primary-foreground) from general dark theme */
 
-    /* Poker table specific dark theme vars */
-    --poker-table-bg: hsl(228, 5%, 18%); /* Darker than main dark bg - Good */
-    --poker-table-border: hsl(228, 5%, 40%); /* Lighter gray border for table - Good */
-    --poker-table-shadow-outer: rgba(0,0,0,0.5); /* Darker shadow - Good */
-    --poker-table-shadow-inner: rgba(0,0,0,0.6); /* Good */
-
-    --seat-bg: hsl(228, 5%, 45%); /* More solid, lighter gray for seats */
-    --seat-border: hsl(228, 5%, 55%); /* Lighter gray border for seats */
-    --seat-text: hsl(210, 40%, 90%); /* Brighter text for seats, was muted-foreground (70% lightness) */
-    --seat-border-hover: hsl(228, 5%, 65%); /* Even lighter border on hover */
-    --poker-seat-shadow: rgba(0,0,0,0.3); /* Slightly lighter shadow for seats in dark mode */
-    --poker-seat-shadow-hover: rgba(0,0,0,0.4);
-
-    /* Sidebar specific colors - can inherit or be distinct */
-    --sidebar-background: 228 5% 20%; /* slightly darker than main bg */
-    --sidebar-foreground: 210 40% 95%;
-    --sidebar-primary: 210 40% 98%;
-    --sidebar-primary-foreground: 228 5% 20%;
-    --sidebar-accent: 228 5% 33%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 228 5% 30%;
-    --sidebar-ring: 210 40% 70%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 

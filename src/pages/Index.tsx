@@ -31,14 +31,19 @@ export const getAvailablePositions = (numberOfPlayers: number): string[] => {
     case 6: // Standard 6-max names
       return POSITIONS_6_MAX;
     case 7: // SB, BB, UTG, UTG+1, HJ, CO, BTN (using 10-max as base for consistency)
+      // POSITIONS_10_MAX: ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'MP1', 'LJ', 'HJ', 'CO', 'BTN']
+      // For 7 players: SB, BB, UTG, UTG+1, HJ, CO, BTN
       return [POSITIONS_10_MAX[0], POSITIONS_10_MAX[1], POSITIONS_10_MAX[2], POSITIONS_10_MAX[3], POSITIONS_10_MAX[7], POSITIONS_10_MAX[8], POSITIONS_10_MAX[9]];
     case 8: // SB, BB, UTG, UTG+1, LJ, HJ, CO, BTN
       return [POSITIONS_10_MAX[0], POSITIONS_10_MAX[1], POSITIONS_10_MAX[2], POSITIONS_10_MAX[3], POSITIONS_10_MAX[6], POSITIONS_10_MAX[7], POSITIONS_10_MAX[8], POSITIONS_10_MAX[9]];
     case 9: // Full ring (9-max)
-      return POSITIONS_FULL_RING;
+      return POSITIONS_FULL_RING; // This is POSITIONS_10_MAX without MP1 essentially, or a specific 9-set. Let's use the defined 9-max.
+                                // POSITIONS_FULL_RING = ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN']
+                                // For consistency, could derive from POSITIONS_10_MAX by omitting one (e.g. MP1)
+                                // For now, using the specific POSITIONS_FULL_RING is fine.
     case 10:
       return POSITIONS_10_MAX;
-    default:
+    default: // Should not be reached if numberOfPlayers is between 2 and 10
       return [];
   }
 };
@@ -77,12 +82,15 @@ const Index = () => {
   const [winProbability, setWinProbability] = useState<number | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
 
+  // Get all selected cards to prevent duplicates
   const allSelectedCards = [...gameState.holeCards, ...gameState.communityCards];
 
+  // Save opponents to local storage
   useEffect(() => {
     localStorage.setItem('opponents', gameState.opponents.toString());
   }, [gameState.opponents]);
 
+  // Enhanced live calculation with improved algorithm
   useEffect(() => {
     if (gameState.holeCards.length === 2) {
       const probability = calculateWinProbability(
@@ -118,11 +126,15 @@ const Index = () => {
       if (availablePositions.length > 0) {
         const currentPositionIndex = availablePositions.indexOf(prevState.position);
         if (currentPositionIndex !== -1) {
+          // Current position is valid, find next
           nextPosition = availablePositions[(currentPositionIndex + 1) % availablePositions.length];
         } else {
+          // Current position is not in the available list (e.g. num players changed),
+          // or no position was set. Default to the first available one.
           nextPosition = availablePositions[0];
         }
       } else {
+        // No available positions (e.g., 0 or 1 player), so clear position
         nextPosition = '';
       }
 
@@ -130,40 +142,45 @@ const Index = () => {
         ...prevState,
         holeCards: [],
         communityCards: [],
-        position: nextPosition,
+        position: nextPosition, // Set to the next position
+        // opponents: prevState.opponents, // This is already preserved by ...prevState
         potSize: 0,
         gameStage: 'preflop',
         bettingHistory: []
       };
     });
+
     setWinProbability(null);
     setInsights([]);
   };
 
   const getProbabilityColor = (prob: number) => {
-    // These colors might need dark mode specific versions if they don't contrast well.
-    // For now, keeping them as is, assuming they are chosen for general visibility.
-    if (prob >= 70) return 'text-emerald-500 dark:text-emerald-400';
-    if (prob >= 55) return 'text-blue-500 dark:text-blue-400';
-    if (prob >= 40) return 'text-amber-500 dark:text-amber-400';
-    if (prob >= 25) return 'text-orange-500 dark:text-orange-400';
-    return 'text-red-500 dark:text-red-400';
+    if (prob >= 70) return 'text-emerald-500';
+    if (prob >= 55) return 'text-blue-500';
+    if (prob >= 40) return 'text-amber-500';
+    if (prob >= 25) return 'text-orange-500';
+    return 'text-red-500';
   };
 
   const getInsightIcon = (type: string) => {
-    // Added dark mode variants for icon colors
     switch (type) {
-      case 'positive': return <TrendingUp className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />;
-      case 'warning': return <AlertTriangle className="w-4 h-4 text-amber-500 dark:text-amber-400" />;
-      case 'negative': return <AlertTriangle className="w-4 h-4 text-red-500 dark:text-red-400" />;
-      case 'neutral': return <Target className="w-4 h-4 text-blue-500 dark:text-blue-400" />;
-      default: return <Target className="w-4 h-4 text-gray-500 dark:text-gray-400" />;
+      case 'positive': return <TrendingUp className="w-4 h-4 text-emerald-500" />;
+      case 'warning': return <AlertTriangle className="w-4 h-4 text-amber-500" />;
+      case 'negative': return <AlertTriangle className="w-4 h-4 text-red-500" />;
+      case 'neutral': return <Target className="w-4 h-4 text-blue-500" />;
+      default: return <Target className="w-4 h-4 text-gray-500" />;
     }
   };
 
-  // Removed getInsightBgColor as Card backgrounds should be handled by Card's default theming.
-  // If specific insight card background colors are needed, this function would need to return
-  // theme-aware classes (e.g., with dark: variants for background and border).
+  const getInsightBgColor = (type: string) => {
+    switch (type) {
+      case 'positive': return 'bg-emerald-50/80 border border-emerald-100';
+      case 'warning': return 'bg-amber-50/80 border border-amber-100';
+      case 'negative': return 'bg-red-50/80 border border-red-100';
+      case 'neutral': return 'bg-blue-50/80 border border-blue-100';
+      default: return 'bg-gray-50/80 border border-gray-100';
+    }
+  };
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
@@ -179,48 +196,48 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground"> {/* Use CSS variables via Tailwind utilities */}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       <div className="max-w-sm mx-auto px-4 py-6 space-y-5">
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="text-2xl">🃏</div>
           <div className="space-y-0.5">
-            <div className="text-lg font-semibold tracking-tight">Poker Pro</div>
-            <div className="text-xs text-neutral-500 dark:text-neutral-400 font-medium">Advanced probability & insights</div>
+            <div className="text-lg font-semibold text-gray-900 tracking-tight">Poker Pro</div>
+            <div className="text-xs text-gray-500 font-medium">Advanced probability & insights</div>
           </div>
         </div>
 
         {/* Win Probability Display */}
-        <Card className="shadow-lg rounded-2xl overflow-hidden">
+        <Card className="bg-white/90 border-0 shadow-lg shadow-black/3 rounded-2xl overflow-hidden">
           <CardContent className="p-6 text-center">
             {winProbability !== null ? (
               <div className="space-y-3">
                 <div className={`text-4xl font-light tracking-tight ${getProbabilityColor(winProbability)}`}>
                   {winProbability}%
                 </div>
-                <div className="text-xs text-neutral-500 dark:text-neutral-400 font-medium tracking-wider uppercase">Win Probability</div>
-                <div className="w-full bg-neutral-100 dark:bg-neutral-800 rounded-full h-1.5 overflow-hidden">
+                <div className="text-xs text-gray-500 font-medium tracking-wider uppercase">Win Probability</div>
+                <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
                   <div 
                     className={`h-1.5 rounded-full transition-all duration-1000 ease-out ${
-                      winProbability >= 70 ? 'bg-emerald-500 dark:bg-emerald-600' :
-                      winProbability >= 55 ? 'bg-blue-500 dark:bg-blue-600' :
-                      winProbability >= 40 ? 'bg-amber-500 dark:bg-amber-600' :
-                      winProbability >= 25 ? 'bg-orange-500 dark:bg-orange-600' : 'bg-red-500 dark:bg-red-600'
+                      winProbability >= 70 ? 'bg-emerald-500' :
+                      winProbability >= 55 ? 'bg-blue-500' :
+                      winProbability >= 40 ? 'bg-amber-500' :
+                      winProbability >= 25 ? 'bg-orange-500' : 'bg-red-500'
                     }`}
                     style={{ width: `${winProbability}%` }}
                   />
                 </div>
-                <div className="flex justify-between text-xs text-neutral-500 dark:text-neutral-400 font-medium">
+                <div className="flex justify-between text-xs text-gray-400 font-medium">
                   <span>vs {gameState.opponents} opponent{gameState.opponents > 1 ? 's' : ''}</span>
                   <span className="capitalize">{gameState.gameStage}</span>
                 </div>
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="w-12 h-12 mx-auto bg-neutral-100 dark:bg-neutral-800 rounded-full flex items-center justify-center">
+                <div className="w-12 h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
                   <div className="text-lg">🎯</div>
                 </div>
-                <div className="text-sm text-neutral-500 dark:text-neutral-400 font-medium">Select your cards</div>
+                <div className="text-sm text-gray-500 font-medium">Select your cards</div>
               </div>
             )}
           </CardContent>
@@ -230,8 +247,8 @@ const Index = () => {
         {insights.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center gap-2 px-1">
-              <div className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">💡 Smart Insights</div>
-              <div className="text-xs text-neutral-500 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded-full">
+              <div className="text-sm font-semibold text-gray-700">💡 Smart Insights</div>
+              <div className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
                 {insights.length}
               </div>
             </div>
@@ -239,7 +256,7 @@ const Index = () => {
               {insights.map((insight, index) => (
                 <Card 
                   key={index}
-                  className="shadow-sm rounded-xl overflow-hidden" // Rely on default Card bg/fg from index.css
+                  className={`${getInsightBgColor(insight.type)} shadow-sm rounded-xl overflow-hidden`}
                 >
                   <CardContent className="p-3">
                     <div className="flex items-start gap-3">
@@ -249,17 +266,17 @@ const Index = () => {
                       </div>
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center justify-between">
-                          <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                          <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">
                             {insight.category}
                           </div>
-                          <div className="text-xs text-neutral-500 dark:text-neutral-400 font-medium">
+                          <div className="text-xs text-gray-400 font-medium">
                             Priority: {insight.priority}/10
                           </div>
                         </div>
-                        <div className="font-medium text-neutral-900 dark:text-neutral-100 text-sm leading-snug">
+                        <div className="font-medium text-gray-900 text-sm leading-snug">
                           {insight.message}
                         </div>
-                        <div className="text-neutral-600 dark:text-neutral-300 text-xs leading-relaxed">
+                        <div className="text-gray-600 text-xs leading-relaxed">
                           {insight.recommendation}
                         </div>
                       </div>
@@ -272,9 +289,9 @@ const Index = () => {
         )}
 
         {/* Hole Cards */}
-        <Card className="shadow-lg rounded-2xl">
+        <Card className="bg-white/90 border-0 shadow-lg shadow-black/3 rounded-2xl">
           <CardContent className="p-5">
-            <div className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">Your Cards</div>
+            <div className="text-sm font-semibold text-gray-700 mb-3">Your Cards</div>
             <CardSelector
               selectedCards={gameState.holeCards}
               onCardsChange={(cards) => setGameState(prev => ({ ...prev, holeCards: cards }))}
@@ -286,9 +303,8 @@ const Index = () => {
         </Card>
 
         {/* Game Stage & Community Cards */}
-        <Card className="shadow-lg rounded-2xl">
+        <Card className="bg-white/90 border-0 shadow-lg shadow-black/3 rounded-2xl">
           <CardContent className="p-5">
-            {/* Assuming GameStage component internals are theme-aware or use themed sub-components */}
             <GameStage
               gameState={gameState}
               onGameStateChange={setGameState}
@@ -298,15 +314,15 @@ const Index = () => {
         </Card>
 
         {/* Settings */}
-        <Card className="shadow-lg rounded-2xl">
+        <Card className="bg-white/90 border-0 shadow-lg shadow-black/3 rounded-2xl">
           <CardContent className="p-5 space-y-5">
-            <div className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">Game Settings</div>
+            <div className="text-sm font-semibold text-gray-700">Game Settings</div>
             
             {/* Opponents */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">
+                <Users className="w-4 h-4 text-gray-500" />
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                   Opponents: {gameState.opponents}
                 </div>
               </div>
@@ -317,10 +333,11 @@ const Index = () => {
                     variant={gameState.opponents === num ? "default" : "outline"}
                     size="sm"
                     onClick={() => setGameState(prev => ({ ...prev, opponents: num }))}
+                    // Base classes for layout, plus specific dark mode overrides for the outline (unselected) state
                     className={`h-9 rounded-lg font-medium transition-all duration-200 ${
                       gameState.opponents !== num
-                        ? 'dark:bg-neutral-800 dark:text-neutral-200 dark:border-neutral-700 dark:hover:bg-neutral-700'
-                        : '' // Default variant handles selected state styling
+                        ? 'dark:bg-neutral-700 dark:text-neutral-200 dark:border-neutral-600 dark:hover:bg-neutral-600'
+                        : '' // The 'default' variant (selected) should handle its own dark theming
                     }`}
                   >
                     {num}
@@ -330,11 +347,10 @@ const Index = () => {
             </div>
 
             {/* Position */}
-            {/* Assuming PositionSelector internals are theme-aware */}
             <PositionSelector
               position={gameState.position}
               onPositionChange={(position) => setGameState(prev => ({ ...prev, position }))}
-              numberOfPlayers={gameState.opponents + 1}
+              numberOfPlayers={gameState.opponents + 1} // hero + opponents
             />
           </CardContent>
         </Card>
@@ -342,10 +358,10 @@ const Index = () => {
         {/* Reset Button */}
         <Button
           onClick={resetGame}
-          variant="outline" // Relying on Button variant to be theme-aware
-          className="w-full h-11 font-medium rounded-xl shadow-sm transition-all duration-200"
+          variant="outline"
+          className="w-full h-11 bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300 text-gray-700 font-medium rounded-xl shadow-sm transition-all duration-200"
         >
-          <RotateCcw className="w-4 h-4 mr-2" /> {/* Icon inherits text color from button */}
+          <RotateCcw className="w-4 h-4 mr-2" />
           Reset Game
         </Button>
       </div>
