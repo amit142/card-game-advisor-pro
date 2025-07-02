@@ -90,6 +90,19 @@ const Index = () => {
     localStorage.setItem('opponents', gameState.opponents.toString());
   }, [gameState.opponents]);
 
+  // Automatic game stage advancement
+  useEffect(() => {
+    const { holeCards, communityCards, gameStage } = gameState;
+
+    if (holeCards.length === 2 && gameStage === 'preflop') {
+      setGameState(prev => ({ ...prev, gameStage: 'flop' }));
+    } else if (holeCards.length === 2 && communityCards.length === 3 && gameStage === 'flop') {
+      setGameState(prev => ({ ...prev, gameStage: 'turn' }));
+    } else if (holeCards.length === 2 && communityCards.length === 4 && gameStage === 'turn') {
+      setGameState(prev => ({ ...prev, gameStage: 'river' }));
+    }
+  }, [gameState.holeCards, gameState.communityCards, gameState.gameStage]);
+
   // Enhanced live calculation with improved algorithm
   useEffect(() => {
     if (gameState.holeCards.length === 2) {
