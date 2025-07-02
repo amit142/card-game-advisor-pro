@@ -63,8 +63,11 @@ const GameStage = ({ gameState, onGameStateChange, allSelectedCards }: GameStage
               variant={gameState.gameStage === stage.name ? "default" : "outline"}
               size="sm"
               onClick={() => setGameStage(stage.name as any)}
-              // Removed custom className to rely on Button variant theming
-              className="h-10 text-xs font-medium rounded-lg transition-all duration-200 flex-1"
+              className={`h-10 text-xs font-medium rounded-lg transition-all duration-200 flex-1 ${
+                gameState.gameStage !== stage.name
+                  ? 'dark:bg-neutral-800 dark:text-neutral-200 dark:border-neutral-700 dark:hover:bg-neutral-700'
+                  : '' // Default variant handles selected state
+              }`}
             >
               {stage.label}
             </Button>

@@ -317,8 +317,11 @@ const Index = () => {
                     variant={gameState.opponents === num ? "default" : "outline"}
                     size="sm"
                     onClick={() => setGameState(prev => ({ ...prev, opponents: num }))}
-                    // Relying on shadcn/ui Button variants to be theme-aware
-                    className="h-9 rounded-lg font-medium transition-all duration-200"
+                    className={`h-9 rounded-lg font-medium transition-all duration-200 ${
+                      gameState.opponents !== num
+                        ? 'dark:bg-neutral-800 dark:text-neutral-200 dark:border-neutral-700 dark:hover:bg-neutral-700'
+                        : '' // Default variant handles selected state styling
+                    }`}
                   >
                     {num}
                   </Button>

@@ -169,17 +169,17 @@ All colors MUST be HSL.
 
 
     /* Poker table specific dark theme vars */
-    --poker-table-bg: hsl(228, 5%, 18%); /* Darker than main dark bg */
-    --poker-table-border: hsl(228, 5%, 40%);
-    --poker-table-shadow-outer: rgba(0,0,0,0.5); /* Darker shadow */
-    --poker-table-shadow-inner: rgba(0,0,0,0.6);
+    --poker-table-bg: hsl(228, 5%, 18%); /* Darker than main dark bg - Good */
+    --poker-table-border: hsl(228, 5%, 40%); /* Lighter gray border for table - Good */
+    --poker-table-shadow-outer: rgba(0,0,0,0.5); /* Darker shadow - Good */
+    --poker-table-shadow-inner: rgba(0,0,0,0.6); /* Good */
 
-    --seat-bg: hsl(var(--muted) / 0.7); /* Use existing muted variable, with some transparency */
-    --seat-border: hsl(var(--border) / 0.8);
-    --seat-text: hsl(var(--muted-foreground));
-    --seat-border-hover: hsl(var(--border));
-    --poker-seat-shadow: rgba(0,0,0,0.4);
-    --poker-seat-shadow-hover: rgba(0,0,0,0.5);
+    --seat-bg: hsl(228, 5%, 45%); /* More solid, lighter gray for seats */
+    --seat-border: hsl(228, 5%, 55%); /* Lighter gray border for seats */
+    --seat-text: hsl(210, 40%, 90%); /* Brighter text for seats, was muted-foreground (70% lightness) */
+    --seat-border-hover: hsl(228, 5%, 65%); /* Even lighter border on hover */
+    --poker-seat-shadow: rgba(0,0,0,0.3); /* Slightly lighter shadow for seats in dark mode */
+    --poker-seat-shadow-hover: rgba(0,0,0,0.4);
 
     /* Sidebar specific colors - can inherit or be distinct */
     --sidebar-background: 228 5% 20%; /* slightly darker than main bg */
