@@ -132,36 +132,37 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    /* Base theme for #35373e (hsl(228, 5%, 23%)) */
+    --background: 228 5% 23%;
     --foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
+    --card: 228 5% 28%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222.2 84% 4.9%;
+    --popover: 228 5% 26%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 210 40% 98%; /* Light primary color for dark mode */
+    --primary-foreground: 228 5% 23%; /* Dark text on light primary */
+    --primary-raw: 210 40% 98%; /* For hsla ring for dark theme primary */
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 228 5% 33%;
+    --secondary-foreground: 210 40% 90%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 228 5% 33%;
+    --muted-foreground: 210 40% 70%;
 
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 228 5% 38%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 45%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 228 5% 33%;
+    --input: 228 5% 33%;
+    --ring: 210 40% 70%;
 
-    /* Dark theme poker variables */
-    --primary-raw: 210 40% 98%; /* For hsla ring for dark theme primary */
+    /* Poker table specific dark theme vars */
     --poker-table-bg: hsl(228, 5%, 18%);
     --poker-table-border: hsl(228, 5%, 40%);
     --poker-table-shadow-outer: rgba(0,0,0,0.5);
@@ -172,16 +173,16 @@ All colors MUST be HSL.
     --seat-shadow: rgba(0,0,0,0.3);
     --seat-border-hover: hsl(228, 5%, 65%);
     --seat-shadow-hover: rgba(0,0,0,0.4);
-    /* Selected seat uses var(--primary) and var(--primary-foreground) from general dark theme */
 
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar specific colors */
+    --sidebar-background: 228 5% 20%;
+    --sidebar-foreground: 210 40% 95%;
+    --sidebar-primary: 210 40% 98%;
+    --sidebar-primary-foreground: 228 5% 20%;
+    --sidebar-accent: 228 5% 33%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 228 5% 30%;
+    --sidebar-ring: 210 40% 70%;
   }
 }
 
