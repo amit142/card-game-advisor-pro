@@ -50,7 +50,8 @@ export const getAvailablePositions = (numberOfPlayers: number): string[] => {
 import CardSelector from '@/components/CardSelector';
 import PositionSelector from '@/components/PositionSelector';
 import GameStage from '@/components/GameStage';
-import { RotateCcw, TrendingUp, AlertTriangle, Target, Users, Trash2 } from 'lucide-react';
+
+import { RotateCcw, TrendingUp, AlertTriangle, Target, Users, Trash2, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { calculateWinProbability } from '@/utils/pokerCalculator';
 import { generatePokerInsights, type Insight } from '@/utils/pokerInsights';
 
@@ -62,6 +63,7 @@ interface GameState {
   potSize: number;
   gameStage: 'preflop' | 'flop' | 'turn' | 'river';
   bettingHistory: string[];
+  roundOutcomes: Array<'win' | 'lose'>;
 }
 
 const Index = () => {
@@ -75,7 +77,8 @@ const Index = () => {
       opponents: initialOpponents,
       potSize: 0,
       gameStage: 'preflop',
-      bettingHistory: []
+      bettingHistory: [],
+      roundOutcomes: [],
     };
   });
 
@@ -175,12 +178,30 @@ const Index = () => {
       opponents: 4,    // Default opponents
       potSize: 0,
       gameStage: 'preflop',
-      bettingHistory: []
+      bettingHistory: [],
+      roundOutcomes: [], // Clear round outcomes on hard reset
+
     });
     setWinProbability(null);
     setInsights([]);
     // Ensure localStorage for opponents is also updated to the default
     localStorage.setItem('opponents', '4');
+  };
+
+  const handleWin = () => {
+    setGameState(prev => ({
+      ...prev,
+      roundOutcomes: [...prev.roundOutcomes, 'win'],
+    }));
+    resetGame(); // Proceed to next round
+  };
+
+  const handleLose = () => {
+    setGameState(prev => ({
+      ...prev,
+      roundOutcomes: [...prev.roundOutcomes, 'lose'],
+    }));
+    resetGame(); // Proceed to next round
   };
 
   const getProbabilityColor = (prob: number) => {
@@ -385,11 +406,28 @@ const Index = () => {
         </Card>
 
         {/* Action Buttons */}
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            onClick={handleWin}
+            variant="outline"
+            className="h-11 font-medium rounded-xl shadow-sm transition-all duration-200 border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600"
+          >
+            <ThumbsUp className="w-4 h-4 mr-2" />
+            WIN
+          </Button>
+          <Button
+            onClick={handleLose}
+            variant="outline"
+            className="h-11 font-medium rounded-xl shadow-sm transition-all duration-200 border-orange-500 text-orange-500 hover:bg-orange-50 hover:text-orange-600"
+          >
+            <ThumbsDown className="w-4 h-4 mr-2" />
+            LOSE
+          </Button>
           <Button
             onClick={resetGame}
             variant="outline"
-            className="flex-1 h-11 bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300 text-gray-700 font-medium rounded-xl shadow-sm transition-all duration-200"
+            className="h-11 bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300 text-gray-700 font-medium rounded-xl shadow-sm transition-all duration-200"
+
           >
             <RotateCcw className="w-4 h-4 mr-2" />
             NEXT ROUND
@@ -397,7 +435,7 @@ const Index = () => {
           <Button
             onClick={hardResetGame}
             variant="destructive"
-            className="flex-1 h-11 font-medium rounded-xl shadow-sm transition-all duration-200"
+            className="h-11 font-medium rounded-xl shadow-sm transition-all duration-200"
           >
             <Trash2 className="w-4 h-4 mr-2" />
             RESET
