@@ -1,7 +1,10 @@
 export interface HandStrength {
-  type: string;
-  rank: number;
-  kicker?: number;
+  type: string; // e.g., "Four of a Kind", "Flush"
+  rank: number; // Numerical rank of the hand type (e.g., Four of a Kind = 7)
+  primaryRankValue?: number; // Rank of the primary cards (e.g., rank of the 4 cards in 4-of-a-kind, rank of triplet in Full House)
+  secondaryRankValue?: number; // Rank of secondary cards (e.g., rank of pair in Full House, rank of lower pair in Two Pair)
+  kickerRankValues?: number[]; // Sorted array of kicker card ranks (high to low)
+  // kicker?: number; // This was the old kicker, can be removed or repurposed if only single kicker needed.
 }
 
 export const calculateWinProbability = (
@@ -29,6 +32,182 @@ export const calculateWinProbability = (
   return Math.max(5, Math.min(95, Math.round(probability)));
 };
 
+// Exporting evaluateHandStrength for use in other parts of the application
+export const evaluateHandStrength = (cards: string[]): HandStrength => {
+  const ranks = cards.map(card => getRankValue(card.slice(0, -1)));
+  const suits = cards.map(card => card.slice(-1));
+
+  const rankCounts = ranks.reduce((acc, rank) => {
+    acc[rank] = (acc[rank] || 0) + 1;
+    return acc;
+  }, {} as Record<number, number>);
+
+  const suitCounts = suits.reduce((acc, suit) => {
+    acc[suit] = (acc[suit] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const pairs = Object.entries(rankCounts).filter(([_, count]) => count >= 2);
+  const hasFlush = Object.values(suitCounts).some(count => count >= 5);
+  const sortedRanks = [...new Set(ranks)].sort((a, b) => b - a);
+
+  const hasStraight = checkStraight(sortedRanks);
+
+  // Basic Ace-low straight check (A2345)
+  const isAceLowStraight = (evalRanks: number[]) => {
+    const uniqueSortedRanks = [...new Set(evalRanks)].sort((a, b) => a - b);
+    return uniqueSortedRanks.length >= 5 &&
+           uniqueSortedRanks.includes(14) && uniqueSortedRanks.includes(2) &&
+           uniqueSortedRanks.includes(3) && uniqueSortedRanks.includes(4) &&
+           uniqueSortedRanks.includes(5);
+  };
+
+  const getKickers = (allCardRanks: number[], usedRanks: number[], count: number = 5): number[] => {
+    const remainingRanks = allCardRanks.filter(r => !usedRanks.includes(r));
+    return remainingRanks.sort((a, b) => b - a).slice(0, count - usedRanks.length);
+  };
+
+  const getTopNRanks = (rankMap: Record<number, number>, n: number, count: number): number[] => {
+    return Object.entries(rankMap)
+      .filter(([_, c]) => c === count)
+      .map(([r, _]) => parseInt(r))
+      .sort((a, b) => b - a)
+      .slice(0, n);
+  };
+
+
+  // Royal Flush
+  if (hasFlush && hasStraight) {
+    const flushSuit = Object.entries(suitCounts).find(([_, count]) => count >= 5)?.[0];
+    if (flushSuit) {
+      const flushCardRanks = cards.filter(c => c.endsWith(flushSuit)).map(c => getRankValue(c.slice(0, -1))).sort((a,b)=> b-a);
+      const royalFlushRanksRequired = [14, 13, 12, 11, 10];
+      if (royalFlushRanksRequired.every(rank => flushCardRanks.includes(rank))) {
+        const result: HandStrength = { type: 'Royal Flush', rank: 9, kickerRankValues: royalFlushRanksRequired };
+        console.log("evaluateHandStrength returning (Royal Flush):", JSON.stringify(result));
+        return result;
+      }
+      // Straight Flush
+      const uniqueFlushRanks = [...new Set(flushCardRanks)].sort((a,b) => b-a);
+      if (uniqueFlushRanks.includes(14) && uniqueFlushRanks.includes(2) && uniqueFlushRanks.includes(3) && uniqueFlushRanks.includes(4) && uniqueFlushRanks.includes(5)) {
+          const result: HandStrength = { type: 'Straight Flush', rank: 8, primaryRankValue: 5, kickerRankValues: [5,4,3,2,14] };
+          console.log("evaluateHandStrength returning (Ace-Low Straight Flush):", JSON.stringify(result));
+          return result;
+      }
+      for (let i = 0; i <= uniqueFlushRanks.length - 5; i++) {
+          let isSf = true;
+          for (let j = 0; j < 4; j++) {
+              if (uniqueFlushRanks[i+j] - 1 !== uniqueFlushRanks[i+j+1]) {
+                  isSf = false;
+                  break;
+              }
+          }
+          if (isSf) {
+              const straightFlushHighCard = uniqueFlushRanks[i];
+              const result: HandStrength = { type: 'Straight Flush', rank: 8, primaryRankValue: straightFlushHighCard, kickerRankValues: uniqueFlushRanks.slice(i, i+5) };
+              console.log("evaluateHandStrength returning (Straight Flush):", JSON.stringify(result));
+              return result;
+          }
+      }
+    }
+  }
+
+  // Four of a Kind
+  const fourOfAKindRank = getTopNRanks(rankCounts, 1, 4)[0];
+  if (fourOfAKindRank) {
+    const kicker = getKickers(sortedRanks, [fourOfAKindRank, fourOfAKindRank, fourOfAKindRank, fourOfAKindRank], 1)[0];
+    const result: HandStrength = { type: 'Four of a Kind', rank: 7, primaryRankValue: fourOfAKindRank, kickerRankValues: kicker !== undefined ? [kicker] : [] };
+    console.log("evaluateHandStrength returning (Four of a Kind):", JSON.stringify(result));
+    return result;
+  }
+
+  // Full House
+  const tripletRank = getTopNRanks(rankCounts, 1, 3)[0];
+  if (tripletRank) {
+    const pairRankForFullHouse = Object.entries(rankCounts)
+      .filter(([r, count]) => count >= 2 && parseInt(r) !== tripletRank)
+      .map(([r, _]) => parseInt(r))
+      .sort((a,b) => b-a)[0];
+    if (pairRankForFullHouse !== undefined) { // Ensure pairRankForFullHouse is found
+      const result: HandStrength = { type: 'Full House', rank: 6, primaryRankValue: tripletRank, secondaryRankValue: pairRankForFullHouse };
+      console.log("evaluateHandStrength returning (Full House):", JSON.stringify(result));
+      return result;
+    }
+  }
+
+  // Flush
+  if (hasFlush) {
+    const flushSuit = Object.entries(suitCounts).find(([_, count]) => count >= 5)?.[0];
+    if (flushSuit) {
+      const flushCardRanks = cards.filter(c => c.endsWith(flushSuit)).map(c => getRankValue(c.slice(0, -1))).sort((a, b) => b - a).slice(0, 5);
+      const result: HandStrength = { type: 'Flush', rank: 5, kickerRankValues: flushCardRanks, primaryRankValue: flushCardRanks[0] };
+      console.log("evaluateHandStrength returning (Flush):", JSON.stringify(result));
+      return result;
+    }
+  }
+
+  // Straight
+  if (hasStraight || isAceLowStraight(ranks)) {
+      let straightHighCard = 0;
+      let straightRanks: number[] = [];
+      if (isAceLowStraight(ranks)) {
+          straightHighCard = 5;
+          straightRanks = [14,5,4,3,2].sort((a,b)=>b-a); // Store actual ranks, Ace as 14 for consistency
+      } else {
+          // Find the highest straight from sortedRanks (which is high-to-low)
+          for (let i = 0; i <= sortedRanks.length - 5; i++) {
+              let isCurrentStraight = true;
+              for (let j = 0; j < 4; j++) { // Check 4 gaps
+                  if (sortedRanks[i+j] - 1 !== sortedRanks[i+j+1]) {
+                      isCurrentStraight = false;
+                      break;
+                  }
+              }
+              if (isCurrentStraight) {
+                  straightHighCard = sortedRanks[i];
+                  straightRanks = sortedRanks.slice(i, i+5);
+                  break;
+              }
+          }
+      }
+      const result: HandStrength = { type: 'Straight', rank: 4, primaryRankValue: straightHighCard, kickerRankValues: straightRanks };
+      console.log("evaluateHandStrength returning (Straight):", JSON.stringify(result));
+      return result;
+  }
+
+  // Three of a Kind (if not part of a Full House)
+  if (tripletRank) {
+    const kickers = getKickers(sortedRanks, [tripletRank, tripletRank, tripletRank], 2);
+    const result: HandStrength = { type: 'Three of a Kind', rank: 3, primaryRankValue: tripletRank, kickerRankValues: kickers };
+    console.log("evaluateHandStrength returning (Three of a Kind):", JSON.stringify(result));
+    return result;
+  }
+
+  // Two Pair
+  const twoPairRanks = getTopNRanks(rankCounts, 2, 2);
+  if (twoPairRanks.length === 2) {
+    const kicker = getKickers(sortedRanks, [twoPairRanks[0],twoPairRanks[0], twoPairRanks[1],twoPairRanks[1]], 1)[0];
+    const result: HandStrength = { type: 'Two Pair', rank: 2, primaryRankValue: twoPairRanks[0], secondaryRankValue: twoPairRanks[1], kickerRankValues: kicker !== undefined ? [kicker] : [] };
+    console.log("evaluateHandStrength returning (Two Pair):", JSON.stringify(result));
+    return result;
+  }
+
+  // One Pair
+  const onePairRank = getTopNRanks(rankCounts, 1, 2)[0];
+  if (onePairRank) {
+    const kickers = getKickers(sortedRanks, [onePairRank, onePairRank], 3);
+    const result: HandStrength = { type: 'One Pair', rank: 1, primaryRankValue: onePairRank, kickerRankValues: kickers };
+    console.log("evaluateHandStrength returning (One Pair):", JSON.stringify(result));
+    return result;
+  }
+
+  // High Card
+  const highCardKickers = sortedRanks.slice(0, 5);
+  const result: HandStrength = { type: 'High Card', rank: 0, primaryRankValue: highCardKickers[0], kickerRankValues: highCardKickers };
+  console.log("evaluateHandStrength returning (High Card):", JSON.stringify(result));
+  return result;
+};
+
 const calculatePreflopEquity = (holeCards: string[], opponents: number): number => {
   const [card1, card2] = holeCards;
   const rank1 = card1.slice(0, -1);
@@ -47,97 +226,54 @@ const calculatePreflopEquity = (holeCards: string[], opponents: number): number 
   let baseEquity = 0;
 
   if (isPair) {
-    // Pocket pairs - based on actual poker statistics
-    const pairEquities = {
+    const pairEquities: Record<number, number> = { // Explicit type for pairEquities
       14: 85.3, 13: 82.4, 12: 79.9, 11: 77.5, 10: 75.1, 
       9: 72.1, 8: 69.1, 7: 66.2, 6: 63.4, 5: 60.6, 
       4: 57.9, 3: 55.2, 2: 52.5
     };
-    baseEquity = pairEquities[highRank as keyof typeof pairEquities] || 50;
+    baseEquity = pairEquities[highRank] || 50;
   } else {
-    // Non-pairs - more accurate based on poker solver data
     if (highRank === 14) { // Ace hands
-      const aceEquities = {
-        13: isSuited ? 66.2 : 63.5, // AK
-        12: isSuited ? 63.4 : 60.2, // AQ  
-        11: isSuited ? 60.1 : 56.8, // AJ
-        10: isSuited ? 56.9 : 53.1, // AT
-        9: isSuited ? 53.2 : 48.9,  // A9
-        8: isSuited ? 50.1 : 45.7,  // A8
-        7: isSuited ? 47.8 : 43.2,  // A7
-        6: isSuited ? 46.1 : 41.5,  // A6
-        5: isSuited ? 47.3 : 42.8,  // A5 (wheel potential)
-        4: isSuited ? 45.2 : 40.6,  // A4
-        3: isSuited ? 44.1 : 39.4,  // A3
-        2: isSuited ? 43.2 : 38.7   // A2
-      };
-      baseEquity = aceEquities[lowRank as keyof typeof aceEquities] || 35;
+      const aceEquities: Record<number, number> = isSuited ?
+        { 13: 66.2, 12: 63.4, 11: 60.1, 10: 56.9, 9: 53.2, 8: 50.1, 7: 47.8, 6: 46.1, 5: 47.3, 4: 45.2, 3: 44.1, 2: 43.2 } :
+        { 13: 63.5, 12: 60.2, 11: 56.8, 10: 53.1, 9: 48.9, 8: 45.7, 7: 43.2, 6: 41.5, 5: 42.8, 4: 40.6, 3: 39.4, 2: 38.7 };
+      baseEquity = aceEquities[lowRank] || 35;
     } else if (highRank === 13) { // King hands
-      const kingEquities = {
-        12: isSuited ? 59.1 : 56.7, // KQ
-        11: isSuited ? 55.8 : 53.1, // KJ
-        10: isSuited ? 52.4 : 49.2, // KT
-        9: isSuited ? 48.6 : 44.8,  // K9
-        8: isSuited ? 45.7 : 41.3,  // K8
-        7: isSuited ? 43.2 : 38.9,  // K7
-        6: isSuited ? 41.1 : 36.8,  // K6
-        5: isSuited ? 39.4 : 35.2,  // K5
-        4: isSuited ? 37.9 : 33.8,  // K4
-        3: isSuited ? 36.7 : 32.6,  // K3
-        2: isSuited ? 35.8 : 31.7   // K2
-      };
-      baseEquity = kingEquities[lowRank as keyof typeof kingEquities] || 30;
+      const kingEquities: Record<number, number> = isSuited ?
+        { 12: 59.1, 11: 55.8, 10: 52.4, 9: 48.6, 8: 45.7, 7: 43.2, 6: 41.1, 5: 39.4, 4: 37.9, 3: 36.7, 2: 35.8 } :
+        { 12: 56.7, 11: 53.1, 10: 49.2, 9: 44.8, 8: 41.3, 7: 38.9, 6: 36.8, 5: 35.2, 4: 33.8, 3: 32.6, 2: 31.7 };
+      baseEquity = kingEquities[lowRank] || 30;
     } else if (highRank === 12) { // Queen hands
-      const queenEquities = {
-        11: isSuited ? 52.3 : 49.8, // QJ
-        10: isSuited ? 48.9 : 46.1, // QT
-        9: isSuited ? 45.2 : 41.7,  // Q9
-        8: isSuited ? 42.1 : 38.3,  // Q8
-        7: isSuited ? 39.4 : 35.6,  // Q7
-        6: isSuited ? 37.2 : 33.4,  // Q6
-        5: isSuited ? 35.4 : 31.6,  // Q5
-        4: isSuited ? 33.9 : 30.1,  // Q4
-        3: isSuited ? 32.7 : 28.9,  // Q3
-        2: isSuited ? 31.8 : 28.0   // Q2
-      };
-      baseEquity = queenEquities[lowRank as keyof typeof queenEquities] || 28;
+      const queenEquities: Record<number, number> = isSuited ?
+        { 11: 52.3, 10: 48.9, 9: 45.2, 8: 42.1, 7: 39.4, 6: 37.2, 5: 35.4, 4: 33.9, 3: 32.7, 2: 31.8 } :
+        { 11: 49.8, 10: 46.1, 9: 41.7, 8: 38.3, 7: 35.6, 6: 33.4, 5: 31.6, 4: 30.1, 3: 28.9, 2: 28.0 };
+      baseEquity = queenEquities[lowRank] || 28;
     } else if (highRank === 11) { // Jack hands
-      const jackEquities = {
-        10: isSuited ? 45.7 : 43.2, // JT
-        9: isSuited ? 42.1 : 38.9,  // J9
-        8: isSuited ? 39.0 : 35.4,  // J8
-        7: isSuited ? 36.3 : 32.6,  // J7
-        6: isSuited ? 34.1 : 30.2,  // J6
-        5: isSuited ? 32.3 : 28.4,  // J5
-        4: isSuited ? 30.8 : 26.9,  // J4
-        3: isSuited ? 29.6 : 25.7,  // J3
-        2: isSuited ? 28.7 : 24.8   // J2
-      };
-      baseEquity = jackEquities[lowRank as keyof typeof jackEquities] || 25;
+      const jackEquities: Record<number, number> = isSuited ?
+        { 10: 45.7, 9: 42.1, 8: 39.0, 7: 36.3, 6: 34.1, 5: 32.3, 4: 30.8, 3: 29.6, 2: 28.7 } :
+        { 10: 43.2, 9: 38.9, 8: 35.4, 7: 32.6, 6: 30.2, 5: 28.4, 4: 26.9, 3: 25.7, 2: 24.8 };
+      baseEquity = jackEquities[lowRank] || 25;
     } else {
-      // Middle and low pairs, connectors, and suited cards
-      if (gap === 0) { // Connectors
-        if (highRank >= 10) baseEquity = isSuited ? 42.3 : 39.1; // T9, 98, etc
-        else if (highRank >= 7) baseEquity = isSuited ? 38.7 : 35.2; // 76, 65, etc
-        else baseEquity = isSuited ? 35.1 : 31.4; // 54, 43, 32
-      } else if (gap === 1) { // One-gappers
-        if (highRank >= 10) baseEquity = isSuited ? 39.2 : 35.8; // T8, 97, etc
-        else if (highRank >= 7) baseEquity = isSuited ? 35.4 : 31.7; // 75, 64, etc
-        else baseEquity = isSuited ? 31.8 : 28.1; // 53, 42
-      } else if (gap === 2) { // Two-gappers
-        if (highRank >= 10) baseEquity = isSuited ? 36.1 : 32.4; // T7, 96, etc
-        else baseEquity = isSuited ? 29.7 : 26.3; // 74, 63, etc
-      } else if (isSuited) {
-        // Other suited cards
-        baseEquity = Math.max(25, 35 - (gap * 2));
-      } else {
-        // Offsuit trash
-        baseEquity = Math.max(15, 25 - (gap * 1.5));
+      // Middle and low non-pairs, connectors, and suited cards
+      if (gap === 0) { // Connectors (e.g. T9, 76)
+          if (highRank >= 10) baseEquity = isSuited ? 42.3 : 39.1;
+          else if (highRank >= 7) baseEquity = isSuited ? 38.7 : 35.2;
+          else baseEquity = isSuited ? 35.1 : 31.4;
+      } else if (gap === 1) { // One-gappers (e.g. T8, 75)
+          if (highRank >= 10) baseEquity = isSuited ? 39.2 : 35.8;
+          else if (highRank >= 7) baseEquity = isSuited ? 35.4 : 31.7;
+          else baseEquity = isSuited ? 31.8 : 28.1;
+      } else if (gap === 2) { // Two-gappers (e.g. T7, 74)
+          if (highRank >= 10) baseEquity = isSuited ? 36.1 : 32.4;
+          else baseEquity = isSuited ? 29.7 : 26.3;
+      } else if (isSuited) { // Other suited cards
+          baseEquity = Math.max(25, 35 - (gap * 2));
+      } else { // Offsuit trash
+          baseEquity = Math.max(15, 25 - (gap * 1.5));
       }
     }
   }
 
-  // More accurate opponent scaling based on actual poker math
   const opponentFactor = Math.pow(0.88, opponents - 1);
   const adjustedEquity = baseEquity * opponentFactor;
   
@@ -150,62 +286,67 @@ const calculatePostflopEquity = (
   opponents: number
 ): number => {
   const allCards = [...holeCards, ...communityCards];
-  const handStrength = evaluateHandStrength(allCards);
+  // Ensure evaluateHandStrength is called with enough cards for a valid hand
+  const handStrength = allCards.length >= 2 ? evaluateHandStrength(allCards) : { type: 'High Card', rank: 0 }; // Default if not enough cards for full eval
   const draws = evaluateDraws(holeCards, communityCards);
   
-  // Base equity from current hand strength - more accurate
   let equity = getHandEquity(handStrength, communityCards.length);
   
-  // Add draw equity with proper calculations
-  const cardsLeft = 5 - communityCards.length;
-  const unseen = 52 - allCards.length;
+  const cardsToCome = 5 - communityCards.length; // Renamed for clarity
+  const unseenCards = 52 - allCards.length; // Renamed for clarity
   
   if (draws.flushDraw) {
-    const flushOuts = Math.max(0, 9 - countFlushCards(allCards, getFlushSuit(holeCards, communityCards)));
-    equity += calculateOutsEquity(flushOuts, cardsLeft, unseen);
+    const flushSuit = getFlushSuit(holeCards, communityCards);
+    const flushOuts = Math.max(0, 9 - countFlushCards(allCards, flushSuit || "")); // Handle null from getFlushSuit
+    equity += calculateOutsEquity(flushOuts, cardsToCome, unseenCards);
   }
   
   if (draws.openEndedStraightDraw) {
-    const straightOuts = 8;
-    equity += calculateOutsEquity(straightOuts, cardsLeft, unseen);
+    const straightOuts = 8; // Assuming 8 outs for open-ended
+    equity += calculateOutsEquity(straightOuts, cardsToCome, unseenCards);
   }
   
   if (draws.gutshot) {
-    const gutshotOuts = 4;
-    equity += calculateOutsEquity(gutshotOuts, cardsLeft, unseen);
+    const gutshotOuts = 4; // Assuming 4 outs for gutshot
+    equity += calculateOutsEquity(gutshotOuts, cardsToCome, unseenCards);
   }
   
   if (draws.overCards > 0) {
-    const overCardOuts = draws.overCards * 3;
-    equity += calculateOutsEquity(overCardOuts, cardsLeft, unseen) * 0.6; // Discounted
+    const overCardOuts = draws.overCards * 3; // Each overcard has 3 outs to pair
+    equity += calculateOutsEquity(overCardOuts, cardsToCome, unseenCards) * 0.6; // Discounted
   }
   
-  // Board texture penalties - more nuanced
   const boardTexture = analyzeBoardTexture(communityCards);
-  if (boardTexture.paired && handStrength.rank < 3) equity *= 0.82;
-  if (boardTexture.flushy && !draws.flushDraw && handStrength.rank < 5) equity *= 0.87;
-  if (boardTexture.straight && handStrength.rank < 4) equity *= 0.85;
+  if (boardTexture.paired && handStrength.rank < 3) equity *= 0.82; // Less equity if board is paired and we have less than trips
+  if (boardTexture.flushy && !draws.flushDraw && handStrength.rank < 5) equity *= 0.87; // Less equity if board is flushy and we don't have a flush/draw
+  if (boardTexture.straight && handStrength.rank < 4) equity *= 0.85; // Less equity if board is straighty and we don't have a straight
   
-  // Opponent penalty - more realistic
-  const opponentPenalty = Math.pow(0.91, opponents - 1);
+  const opponentPenalty = Math.pow(0.91, opponents); // Adjusted penalty slightly
   equity *= opponentPenalty;
   
   return Math.max(5, Math.min(95, equity));
 };
 
-const calculateOutsEquity = (outs: number, cardsLeft: number, unseenCards: number): number => {
-  if (cardsLeft === 1) {
+const calculateOutsEquity = (outs: number, cardsToCome: number, unseenCards: number): number => {
+  if (unseenCards <= 0) return 0; // Avoid division by zero
+  if (cardsToCome === 1) {
     return (outs / unseenCards) * 100;
-  } else if (cardsLeft === 2) {
-    // Rule of 4 for two cards
-    const prob = 1 - ((unseenCards - outs) / unseenCards) * ((unseenCards - outs - 1) / (unseenCards - 1));
-    return prob * 100;
+  } else if (cardsToCome === 2) {
+    // Probability of hitting on turn OR river: P(A) + P(B) - P(A and B)
+    // P(hit on turn) = outs / unseen
+    // P(hit on river given missed turn) = outs / (unseen - 1)
+    // P(miss on turn) = (unseen - outs) / unseen
+    // P(miss on river given missed turn) = (unseen - outs - 1) / (unseen - 1)
+    // P(miss both) = P(miss on turn) * P(miss on river given missed turn)
+    if (unseenCards < 2) return (outs / unseenCards) * 100; // Effectively one card if only one unseen left
+    const probMissBoth = ((unseenCards - outs) / unseenCards) * ((unseenCards - outs - 1) / (unseenCards - 1));
+    return (1 - probMissBoth) * 100;
   }
   return 0;
 };
 
-const getHandEquity = (handStrength: HandStrength, boardCards: number): number => {
-  const baseEquities = {
+const getHandEquity = (handStrength: HandStrength, boardCardsCount: number): number => { // Renamed param
+  const baseEquities: Record<number, number> = { // Explicit type
     0: 12,  // High card
     1: 28,  // One pair
     2: 48,  // Two pair
@@ -214,50 +355,16 @@ const getHandEquity = (handStrength: HandStrength, boardCards: number): number =
     5: 86,  // Flush
     6: 92,  // Full house
     7: 96,  // Four of a kind
-    8: 98   // Straight flush
+    8: 98,  // Straight flush
+    9: 99   // Royal Flush (added)
   };
   
-  let equity = baseEquities[handStrength.rank as keyof typeof baseEquities] || 12;
+  let equity = baseEquities[handStrength.rank] || 10; // Default for unknown or very low rank
   
-  // Adjust based on board cards
-  if (boardCards === 3) equity *= 0.95; // Flop uncertainty
-  else if (boardCards === 4) equity *= 0.98; // Turn more certain
+  if (boardCardsCount === 3) equity *= 0.95;
+  else if (boardCardsCount === 4) equity *= 0.98;
   
   return equity;
-};
-
-const evaluateHandStrength = (cards: string[]): HandStrength => {
-  const ranks = cards.map(card => getRankValue(card.slice(0, -1)));
-  const suits = cards.map(card => card.slice(-1));
-  
-  const rankCounts = ranks.reduce((acc, rank) => {
-    acc[rank] = (acc[rank] || 0) + 1;
-    return acc;
-  }, {} as Record<number, number>);
-  
-  const suitCounts = suits.reduce((acc, suit) => {
-    acc[suit] = (acc[suit] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-  
-  const pairs = Object.entries(rankCounts).filter(([_, count]) => count >= 2);
-  const hasFlush = Object.values(suitCounts).some(count => count >= 5);
-  const sortedRanks = [...new Set(ranks)].sort((a, b) => b - a);
-  
-  const hasStraight = checkStraight(sortedRanks);
-  
-  if (hasFlush && hasStraight) return { type: 'Straight Flush', rank: 8 };
-  if (Object.values(rankCounts).includes(4)) return { type: 'Four of a Kind', rank: 7 };
-  if (Object.values(rankCounts).includes(3) && Object.values(rankCounts).includes(2)) {
-    return { type: 'Full House', rank: 6 };
-  }
-  if (hasFlush) return { type: 'Flush', rank: 5 };
-  if (hasStraight) return { type: 'Straight', rank: 4 };
-  if (Object.values(rankCounts).includes(3)) return { type: 'Three of a Kind', rank: 3 };
-  if (pairs.length >= 2) return { type: 'Two Pair', rank: 2 };
-  if (pairs.length === 1) return { type: 'One Pair', rank: 1 };
-  
-  return { type: 'High Card', rank: 0 };
 };
 
 const evaluateDraws = (holeCards: string[], communityCards: string[]) => {
@@ -274,7 +381,7 @@ const evaluateDraws = (holeCards: string[], communityCards: string[]) => {
   const { openEndedStraightDraw, gutshot } = checkStraightDraws(ranks);
   
   const boardHighCard = communityCards.length > 0 ? 
-    Math.max(...communityCards.map(card => getRankValue(card.slice(0, -1)))) : 0;
+    Math.max(...communityCards.map(card => getRankValue(card.slice(0, -1))).filter(r => r > 0)) : 0;
   const overCards = holeCards.filter(card => 
     getRankValue(card.slice(0, -1)) > boardHighCard
   ).length;
@@ -283,50 +390,69 @@ const evaluateDraws = (holeCards: string[], communityCards: string[]) => {
 };
 
 const checkStraight = (sortedRanks: number[]): boolean => {
+  if (sortedRanks.length < 5) return false;
+  // Check for Ace-low straight (A,2,3,4,5) - ranks are [14,5,4,3,2]
+  const aceLowStraight = sortedRanks.includes(14) && sortedRanks.includes(2) && sortedRanks.includes(3) && sortedRanks.includes(4) && sortedRanks.includes(5);
+  if (aceLowStraight) return true;
+
+  // Check for other straights
   for (let i = 0; i <= sortedRanks.length - 5; i++) {
-    let consecutive = 1;
-    for (let j = i; j < sortedRanks.length - 1; j++) {
-      if (sortedRanks[j] - sortedRanks[j + 1] === 1) {
-        consecutive++;
-        if (consecutive >= 5) return true;
-      } else if (sortedRanks[j] !== sortedRanks[j + 1]) {
+    let isStraight = true;
+    for (let j = 0; j < 4; j++) {
+      if (sortedRanks[i+j] - 1 !== sortedRanks[i+j+1]) {
+        isStraight = false;
         break;
       }
     }
+    if (isStraight) return true;
   }
-  
-  if (sortedRanks.includes(14) && sortedRanks.includes(5) && 
-      sortedRanks.includes(4) && sortedRanks.includes(3) && sortedRanks.includes(2)) {
-    return true;
-  }
-  
   return false;
 };
 
 const checkStraightDraws = (ranks: number[]) => {
-  const uniqueRanks = [...new Set(ranks)].sort((a, b) => a - b);
+  const uniqueSortedRanks = [...new Set(ranks)].sort((a, b) => a - b); // Ascending sort
   let openEndedStraightDraw = false;
   let gutshot = false;
-  
-  for (let i = 0; i < uniqueRanks.length - 3; i++) {
-    const sequence = uniqueRanks.slice(i, i + 4);
-    if (sequence[3] - sequence[0] === 3) {
+
+  if (uniqueSortedRanks.length < 3) return { openEndedStraightDraw, gutshot }; // Not enough cards for a draw
+
+  // Check for open-ended (4 consecutive cards)
+  // e.g., 5,6,7,8 for a 4 or 9
+  for (let i = 0; i <= uniqueSortedRanks.length - 4; i++) {
+    if (uniqueSortedRanks[i+3] - uniqueSortedRanks[i] === 3) {
       openEndedStraightDraw = true;
       break;
     }
   }
-  
-  if (!openEndedStraightDraw) {
-    for (let i = 0; i < uniqueRanks.length - 2; i++) {
-      for (let j = i + 1; j < uniqueRanks.length - 1; j++) {
-        for (let k = j + 1; k < uniqueRanks.length; k++) {
-          const cards = [uniqueRanks[i], uniqueRanks[j], uniqueRanks[k]];
-          if ((cards[2] - cards[0]) === 4 && (cards[1] - cards[0]) !== 2 && (cards[2] - cards[1]) !== 2) {
-            gutshot = true;
-            break;
-          }
-        }
+  // Check for Ace-low open-ended (A,2,3,4 needs a 5; or 2,3,4,5 needs an A)
+  if (uniqueSortedRanks.includes(14) && uniqueSortedRanks.includes(2) && uniqueSortedRanks.includes(3) && uniqueSortedRanks.includes(4)) openEndedStraightDraw = true;
+  if (uniqueSortedRanks.includes(2) && uniqueSortedRanks.includes(3) && uniqueSortedRanks.includes(4) && uniqueSortedRanks.includes(5)) openEndedStraightDraw = true;
+
+
+  // Check for gutshot (4 cards with one internal gap)
+  // e.g., 5,6,8,9 needs a 7
+  if (!openEndedStraightDraw && uniqueSortedRanks.length >= 4) {
+    for (let i = 0; i <= uniqueSortedRanks.length - 4; i++) {
+      // Check for pattern like x, x+1, x+3, x+4 (gap of 1 in middle)
+      if (uniqueSortedRanks[i+1] === uniqueSortedRanks[i]+1 &&
+          uniqueSortedRanks[i+2] === uniqueSortedRanks[i]+3 &&
+          uniqueSortedRanks[i+3] === uniqueSortedRanks[i]+4) {
+        gutshot = true;
+        break;
       }
+       // Check for pattern like x, x+2, x+3, x+4 (gap of 1 at start)
+      if (uniqueSortedRanks[i+1] === uniqueSortedRanks[i]+2 &&
+          uniqueSortedRanks[i+2] === uniqueSortedRanks[i]+3 &&
+          uniqueSortedRanks[i+3] === uniqueSortedRanks[i]+4) {
+        gutshot = true;
+        break;
+      }
+    }
+     // Check for Ace-low gutshot (e.g. A23_5 needs 4, A2_45 needs 3, A_345 needs 2)
+    if (uniqueSortedRanks.includes(14)) { // Ace present
+        if (uniqueSortedRanks.includes(2) && uniqueSortedRanks.includes(3) && uniqueSortedRanks.includes(5)) gutshot = true; // A23_5
+        if (uniqueSortedRanks.includes(2) && uniqueSortedRanks.includes(4) && uniqueSortedRanks.includes(5)) gutshot = true; // A2_45
+        if (uniqueSortedRanks.includes(3) && uniqueSortedRanks.includes(4) && uniqueSortedRanks.includes(5)) gutshot = true; // A_345
     }
   }
   
@@ -350,17 +476,36 @@ const analyzeBoardTexture = (communityCards: string[]) => {
   }, {} as Record<string, number>);
   
   const paired = Object.values(rankCounts).some(count => count >= 2);
-  const flushy = Object.values(suitCounts).some(count => count >= 3);
-  const straight = checkStraightDraws(ranks).openEndedStraightDraw || checkStraight([...new Set(ranks)].sort((a, b) => b - a));
-  
-  return { paired, flushy, straight };
+  const flushy = Object.values(suitCounts).some(count => count >= 3); // 3 cards of same suit on board
+
+  // Check for straight possibilities on board
+  const uniqueSortedRanks = [...new Set(ranks)].sort((a,b) => a-b);
+  let straightPossible = false;
+  if (uniqueSortedRanks.length >= 3) {
+      for(let i=0; i <= uniqueSortedRanks.length - 3; i++) {
+          if (uniqueSortedRanks[i+2] - uniqueSortedRanks[i] <= 4) { // Max gap of 4 for 3 cards to form part of straight
+              straightPossible = true;
+              break;
+          }
+      }
+      // Ace-low straight check on board
+      if (uniqueSortedRanks.includes(14) && uniqueSortedRanks.includes(2) && uniqueSortedRanks.includes(3)) straightPossible = true;
+      if (uniqueSortedRanks.includes(14) && uniqueSortedRanks.includes(2) && uniqueSortedRanks.includes(4)) straightPossible = true;
+      if (uniqueSortedRanks.includes(14) && uniqueSortedRanks.includes(2) && uniqueSortedRanks.includes(5)) straightPossible = true;
+      if (uniqueSortedRanks.includes(14) && uniqueSortedRanks.includes(3) && uniqueSortedRanks.includes(4)) straightPossible = true;
+      if (uniqueSortedRanks.includes(14) && uniqueSortedRanks.includes(3) && uniqueSortedRanks.includes(5)) straightPossible = true;
+      if (uniqueSortedRanks.includes(14) && uniqueSortedRanks.includes(4) && uniqueSortedRanks.includes(5)) straightPossible = true;
+  }
+
+  return { paired, flushy, straight: straightPossible };
 };
 
 const countFlushCards = (cards: string[], suit: string): number => {
+  if (!suit) return 0;
   return cards.filter(card => card.slice(-1) === suit).length;
 };
 
-const getFlushSuit = (holeCards: string[], communityCards: string[]): string => {
+const getFlushSuit = (holeCards: string[], communityCards: string[]): string | null => {
   const allCards = [...holeCards, ...communityCards];
   const suits = allCards.map(card => card.slice(-1));
   const suitCounts = suits.reduce((acc, suit) => {
@@ -368,20 +513,27 @@ const getFlushSuit = (holeCards: string[], communityCards: string[]): string => 
     return acc;
   }, {} as Record<string, number>);
   
-  return Object.entries(suitCounts).find(([_, count]) => count >= 3)?.[0] || '';
+  const flushSuitEntry = Object.entries(suitCounts).find(([_, count]) => count >= 4); // Check for 4 cards for a flush draw
+  return flushSuitEntry ? flushSuitEntry[0] : null;
 };
 
 const getRankValue = (rank: string): number => {
   const rankMap: Record<string, number> = {
-    'A': 14, 'K': 13, 'Q': 12, 'J': 11, '10': 10,
+    'A': 14, 'K': 13, 'Q': 12, 'J': 11, 'T': 10, // Changed '10' to 'T' for consistency if card format is 'Ts' etc.
     '9': 9, '8': 8, '7': 7, '6': 6, '5': 5, '4': 4, '3': 3, '2': 2
   };
+  // If rank is '10', handle it specifically, otherwise use the map
+  if (rank === "10") return 10;
   return rankMap[rank] || 0;
 };
 
 const getPositionMultiplier = (position: string): number => {
   const positionMap: Record<string, number> = {
     'BTN': 1.05, 'CO': 1.03, 'MP': 1.00, 'UTG': 0.95, 'SB': 0.92, 'BB': 0.94
+    // Add other positions like UTG+1, UTG+2, LJ, HJ if they are distinct in your position selector
   };
-  return positionMap[position] || 1.0;
+  // Fallback for positions not explicitly listed, e.g. UTG+1 might be treated as UTG or MP
+  if (position.startsWith("UTG")) return positionMap["UTG"] || 0.95;
+  if (position.includes("MP") || position === "LJ" || position === "HJ") return positionMap["MP"] || 1.00;
+  return positionMap[position] || 1.0; // Default multiplier
 };

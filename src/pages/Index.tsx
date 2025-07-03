@@ -9,6 +9,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"; // Assuming this is the correct path for Select
 
+import { evaluateHandStrength, type HandStrength } from '@/utils/pokerCalculator'; // Import evaluateHandStrength and HandStrength type
+import { type StrongestHandData } from '@/App'; // Assuming StrongestHandData is exported from App.tsx or defined in a shared types file
+
 // Standard poker positions
 const POSITIONS_10_MAX = ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'MP1', 'LJ', 'HJ', 'CO', 'BTN'];
 const POSITIONS_FULL_RING = ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN']; // 9-max
@@ -50,6 +53,9 @@ export const getAvailablePositions = (numberOfPlayers: number): string[] => {
 import CardSelector from '@/components/CardSelector';
 import PositionSelector from '@/components/PositionSelector';
 import GameStage from '@/components/GameStage';
+import CurrentHandDisplay from '@/components/CurrentHandDisplay';
+import StatisticsDisplayDialog from '@/components/StatisticsDisplayDialog'; // Import the dialog
+import { BarChart3 } from 'lucide-react'; // Icon for stats button
 
 import { RotateCcw, TrendingUp, AlertTriangle, Target, Users, Trash2, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { calculateWinProbability } from '@/utils/pokerCalculator';
@@ -66,7 +72,16 @@ interface GameState {
   roundOutcomes: Array<'win' | 'lose'>;
 }
 
-const Index = () => {
+interface IndexProps {
+  strongestHand: StrongestHandData | null; // Now expects the full object or null
+  wins: number;
+  losses: number;
+  handleWin: (handDetails: HandStrength, winningCards: string[]) => void;
+  handleLoss: () => void;
+  resetAppStatistics: () => void;
+}
+
+const Index = ({ strongestHand, wins, losses, handleWin: appHandleWin, handleLoss: appHandleLoss, resetAppStatistics }: IndexProps) => {
   const [gameState, setGameState] = useState<GameState>(() => {
     const storedOpponents = localStorage.getItem('opponents');
     const initialOpponents = storedOpponents ? parseInt(storedOpponents, 10) : 2;
@@ -84,6 +99,7 @@ const Index = () => {
 
   const [winProbability, setWinProbability] = useState<number | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
+  const [isStatsDialogOpen, setIsStatsDialogOpen] = useState(false); // State for dialog
 
   // Get all selected cards to prevent duplicates
   const allSelectedCards = [...gameState.holeCards, ...gameState.communityCards];
@@ -186,9 +202,42 @@ const Index = () => {
     setInsights([]);
     // Ensure localStorage for opponents is also updated to the default
     localStorage.setItem('opponents', '4');
+    // Call the function to reset app-level statistics
+    resetAppStatistics();
   };
 
   const handleWin = () => {
+    const allCards = [...gameState.holeCards, ...gameState.communityCards];
+    // It's possible to win before 5 cards are dealt (e.g., everyone folds).
+    // In such cases, we might not have a "hand" to evaluate for strongest hand purposes,
+    // or we might pass a generic string like "Won Pre-Community".
+    if (allCards.length >= 2 && gameState.holeCards.length === 2) {
+      if (allCards.length >= 5) {
+        const handDetails = evaluateHandStrength(allCards);
+        console.log("Index.tsx - handDetails received from evaluateHandStrength (>=5 cards):", JSON.stringify(handDetails)); // Added log
+        appHandleWin(handDetails, allCards);
+      } else {
+        // Win before 5 cards are dealt. Create a minimal HandStrength object.
+        // App.tsx will likely ignore this for "strongest hand" if "Won Before Showdown" isn't in handStrengthOrder
+        // or has a very low/special rank.
+        const handDetails: HandStrength = {
+          type: "Won Before Showdown",
+          rank: -1, // Or some other indicator that it's not a standard poker hand rank
+          // primaryRankValue, secondaryRankValue, kickerRankValues would be undefined
+        };
+        console.log("Index.tsx - handDetails for 'Won Before Showdown':", JSON.stringify(handDetails)); // Added log
+        appHandleWin(handDetails, gameState.holeCards);
+        console.log("Win recorded before 5 cards. Sent minimal hand details and hole cards.");
+      }
+    } else {
+      const handDetails: HandStrength = {
+        type: "Won (No Cards Shown)",
+        rank: -1, // Or some other indicator
+      };
+      console.log("Index.tsx - handDetails for 'Won (No Cards Shown)':", JSON.stringify(handDetails)); // Added log
+      appHandleWin(handDetails, []);
+      console.warn("Win recorded, but no hole cards available for strongest hand evaluation.");
+    }
     setGameState(prev => ({
       ...prev,
       roundOutcomes: [...prev.roundOutcomes, 'win'],
@@ -197,6 +246,7 @@ const Index = () => {
   };
 
   const handleLose = () => {
+    appHandleLoss();
     setGameState(prev => ({
       ...prev,
       roundOutcomes: [...prev.roundOutcomes, 'lose'],
@@ -256,6 +306,31 @@ const Index = () => {
             <div className="text-xs text-gray-500 font-medium">Advanced probability & insights</div>
           </div>
         </div>
+
+        {/* Current Hand Display */}
+        <CurrentHandDisplay holeCards={gameState.holeCards} communityCards={gameState.communityCards} />
+
+        {/* Display Wins, Losses, and Strongest Hand */}
+        <Card className="bg-white/90 border-0 shadow-lg shadow-black/3 rounded-2xl">
+          <CardContent className="p-4 text-sm">
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div>
+                <div className="font-semibold text-gray-700">{wins}</div>
+                <div className="text-xs text-gray-500">Wins</div>
+              </div>
+              <div>
+                <div className="font-semibold text-gray-700">{losses}</div>
+                <div className="text-xs text-gray-500">Losses</div>
+              </div>
+              <div>
+                <div className="font-semibold text-gray-700 truncate" title={strongestHand?.type || "N/A"}>
+                  {strongestHand?.type || "N/A"}
+                </div>
+                <div className="text-xs text-gray-500">Strongest Hand</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Win Probability Display */}
         <Card className="bg-white/90 border-0 shadow-lg shadow-black/3 rounded-2xl overflow-hidden">
@@ -441,6 +516,26 @@ const Index = () => {
             RESET
           </Button>
         </div>
+
+        {/* Statistics Button - could be placed elsewhere too */}
+        <div className="pt-4 text-center">
+          <Button
+            variant="outline"
+            onClick={() => setIsStatsDialogOpen(true)}
+            className="h-10 font-medium rounded-xl shadow-sm transition-all duration-200 border-blue-500 text-blue-500 hover:bg-blue-50 hover:text-blue-600"
+          >
+            <BarChart3 className="w-4 h-4 mr-2" />
+            Show Statistics
+          </Button>
+        </div>
+
+        <StatisticsDisplayDialog
+          isOpen={isStatsDialogOpen}
+          onOpenChange={setIsStatsDialogOpen}
+          wins={wins}
+          losses={losses}
+          strongestHandData={strongestHand}
+        />
       </div>
     </div>
   );
