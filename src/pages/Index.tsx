@@ -66,7 +66,15 @@ interface GameState {
   roundOutcomes: Array<'win' | 'lose'>;
 }
 
-const Index = () => {
+interface IndexProps {
+  strongestHand: string | null;
+  wins: number;
+  losses: number;
+  handleWin: (hand: string) => void;
+  handleLoss: () => void;
+}
+
+const Index = ({ strongestHand, wins, losses, handleWin: appHandleWin, handleLoss: appHandleLoss }: IndexProps) => {
   const [gameState, setGameState] = useState<GameState>(() => {
     const storedOpponents = localStorage.getItem('opponents');
     const initialOpponents = storedOpponents ? parseInt(storedOpponents, 10) : 2;
@@ -189,6 +197,10 @@ const Index = () => {
   };
 
   const handleWin = () => {
+    // TODO: Determine the actual hand string to pass to appHandleWin
+    // For now, using a placeholder. This needs to be updated with game logic.
+    const currentHand = gameState.holeCards.join(", ") + (gameState.communityCards.length > 0 ? ", " + gameState.communityCards.join(", ") : "");
+    appHandleWin(currentHand || "Unknown Hand");
     setGameState(prev => ({
       ...prev,
       roundOutcomes: [...prev.roundOutcomes, 'win'],
@@ -197,6 +209,7 @@ const Index = () => {
   };
 
   const handleLose = () => {
+    appHandleLoss();
     setGameState(prev => ({
       ...prev,
       roundOutcomes: [...prev.roundOutcomes, 'lose'],
@@ -256,6 +269,28 @@ const Index = () => {
             <div className="text-xs text-gray-500 font-medium">Advanced probability & insights</div>
           </div>
         </div>
+
+        {/* Display Wins, Losses, and Strongest Hand */}
+        <Card className="bg-white/90 border-0 shadow-lg shadow-black/3 rounded-2xl">
+          <CardContent className="p-4 text-sm">
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div>
+                <div className="font-semibold text-gray-700">{wins}</div>
+                <div className="text-xs text-gray-500">Wins</div>
+              </div>
+              <div>
+                <div className="font-semibold text-gray-700">{losses}</div>
+                <div className="text-xs text-gray-500">Losses</div>
+              </div>
+              <div>
+                <div className="font-semibold text-gray-700 truncate" title={strongestHand || "N/A"}>
+                  {strongestHand || "N/A"}
+                </div>
+                <div className="text-xs text-gray-500">Strongest Hand</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Win Probability Display */}
         <Card className="bg-white/90 border-0 shadow-lg shadow-black/3 rounded-2xl overflow-hidden">
