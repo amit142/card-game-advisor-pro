@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/select"; // Assuming this is the correct path for Select
 
 import { evaluateHandStrength, type HandStrength } from '@/utils/pokerCalculator'; // Import evaluateHandStrength and HandStrength type
+import { type StrongestHandData } from '@/App'; // Assuming StrongestHandData is exported from App.tsx or defined in a shared types file
 
 // Standard poker positions
 const POSITIONS_10_MAX = ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'MP1', 'LJ', 'HJ', 'CO', 'BTN'];
@@ -52,7 +53,9 @@ export const getAvailablePositions = (numberOfPlayers: number): string[] => {
 import CardSelector from '@/components/CardSelector';
 import PositionSelector from '@/components/PositionSelector';
 import GameStage from '@/components/GameStage';
-import CurrentHandDisplay from '@/components/CurrentHandDisplay'; // Import the new component
+import CurrentHandDisplay from '@/components/CurrentHandDisplay';
+import StatisticsDisplayDialog from '@/components/StatisticsDisplayDialog'; // Import the dialog
+import { BarChart3 } from 'lucide-react'; // Icon for stats button
 
 import { RotateCcw, TrendingUp, AlertTriangle, Target, Users, Trash2, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { calculateWinProbability } from '@/utils/pokerCalculator';
@@ -70,12 +73,12 @@ interface GameState {
 }
 
 interface IndexProps {
-  strongestHand: string | null; // This will still be the name for display
+  strongestHand: StrongestHandData | null; // Now expects the full object or null
   wins: number;
   losses: number;
-  handleWin: (handDetails: HandStrength, winningCards: string[]) => void; // Expects full HandStrength object
+  handleWin: (handDetails: HandStrength, winningCards: string[]) => void;
   handleLoss: () => void;
-  resetAppStatistics: () => void; // Added prop for resetting app-level stats
+  resetAppStatistics: () => void;
 }
 
 const Index = ({ strongestHand, wins, losses, handleWin: appHandleWin, handleLoss: appHandleLoss, resetAppStatistics }: IndexProps) => {
@@ -96,6 +99,7 @@ const Index = ({ strongestHand, wins, losses, handleWin: appHandleWin, handleLos
 
   const [winProbability, setWinProbability] = useState<number | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
+  const [isStatsDialogOpen, setIsStatsDialogOpen] = useState(false); // State for dialog
 
   // Get all selected cards to prevent duplicates
   const allSelectedCards = [...gameState.holeCards, ...gameState.communityCards];
@@ -319,8 +323,8 @@ const Index = ({ strongestHand, wins, losses, handleWin: appHandleWin, handleLos
                 <div className="text-xs text-gray-500">Losses</div>
               </div>
               <div>
-                <div className="font-semibold text-gray-700 truncate" title={strongestHand || "N/A"}>
-                  {strongestHand || "N/A"}
+                <div className="font-semibold text-gray-700 truncate" title={strongestHand?.type || "N/A"}>
+                  {strongestHand?.type || "N/A"}
                 </div>
                 <div className="text-xs text-gray-500">Strongest Hand</div>
               </div>
@@ -512,6 +516,26 @@ const Index = ({ strongestHand, wins, losses, handleWin: appHandleWin, handleLos
             RESET
           </Button>
         </div>
+
+        {/* Statistics Button - could be placed elsewhere too */}
+        <div className="pt-4 text-center">
+          <Button
+            variant="outline"
+            onClick={() => setIsStatsDialogOpen(true)}
+            className="h-10 font-medium rounded-xl shadow-sm transition-all duration-200 border-blue-500 text-blue-500 hover:bg-blue-50 hover:text-blue-600"
+          >
+            <BarChart3 className="w-4 h-4 mr-2" />
+            Show Statistics
+          </Button>
+        </div>
+
+        <StatisticsDisplayDialog
+          isOpen={isStatsDialogOpen}
+          onOpenChange={setIsStatsDialogOpen}
+          wins={wins}
+          losses={losses}
+          strongestHandData={strongestHand}
+        />
       </div>
     </div>
   );

@@ -30,7 +30,7 @@ import { type HandStrength } from "./utils/pokerCalculator"; // Import HandStren
 
 // The name will still be used for display and stored in localStorage.
 // This interface will now fully mirror HandStrength from pokerCalculator, plus the actual cards.
-interface StrongestHandData extends HandStrength { // Extend HandStrength
+export interface StrongestHandData extends HandStrength { // Extend HandStrength // Added export
   cards?: string[]; // Array of card strings e.g. ["Ah", "Ks"]
 }
 
@@ -298,8 +298,8 @@ const App = () => {
         <BrowserRouter>
           <Routes>
             {/* Pass state and update functions to Index or other relevant components */}
-            {/* For Index, we now pass strongestHand.type for display, or null */}
-            <Route path="/" element={<Index strongestHand={strongestHand ? strongestHand.type : null} wins={wins} losses={losses} handleWin={handleWin} handleLoss={handleLoss} resetAppStatistics={resetAppStatistics} />} />
+            {/* Pass the full strongestHand object to Index */}
+            <Route path="/" element={<Index strongestHand={strongestHand} wins={wins} losses={losses} handleWin={handleWin} handleLoss={handleLoss} resetAppStatistics={resetAppStatistics} />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
