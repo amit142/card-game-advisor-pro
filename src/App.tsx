@@ -26,56 +26,73 @@ const handStrengthOrder: Record<string, number> = {
 const queryClient = new QueryClient();
 
 // Store the rank of the strongest hand, not just the name, for easier comparison.
+import { type HandStrength } from "./utils/pokerCalculator"; // Import HandStrength
+
 // The name will still be used for display and stored in localStorage.
-interface StrongestHandData {
-  name: string;
-  rank: number;
-  cards?: string[]; // Added to store the actual cards
+// This interface will now fully mirror HandStrength from pokerCalculator, plus the actual cards.
+interface StrongestHandData extends HandStrength { // Extend HandStrength
+  cards?: string[]; // Array of card strings e.g. ["Ah", "Ks"]
 }
 
 const App = () => {
-  // strongestHand state now stores an object { name: string, rank: number, cards?: string[] } or null
+  // strongestHand state now stores an object of type StrongestHandData or null
   const [strongestHand, setStrongestHand] = useState<StrongestHandData | null>(null);
   const [wins, setWins] = useState<number>(0);
   const [losses, setLosses] = useState<number>(0);
 
   useEffect(() => {
     // Load data from local storage on component mount
-    const storedStrongestHandName = localStorage.getItem("strongestHandName");
-    const storedStrongestHandRank = localStorage.getItem("strongestHandRank");
-    const storedStrongestHandCards = localStorage.getItem("strongestHandActualCards"); // Key for cards
+    const name = localStorage.getItem("strongestHandName");
+    const rankStr = localStorage.getItem("strongestHandRank");
+    const cardsStr = localStorage.getItem("strongestHandActualCards");
+    const primaryRankValueStr = localStorage.getItem("strongestHandPrimaryRank");
+    const secondaryRankValueStr = localStorage.getItem("strongestHandSecondaryRank");
+    const kickerRankValuesStr = localStorage.getItem("strongestHandKickers");
+
     const storedWins = localStorage.getItem("wins");
     const storedLosses = localStorage.getItem("losses");
 
-    if (storedStrongestHandName && storedStrongestHandRank) {
-      const rank = parseInt(storedStrongestHandRank, 10);
-      let cards: string[] | undefined = undefined;
-      if (storedStrongestHandCards) {
-        try {
-          cards = JSON.parse(storedStrongestHandCards);
-          if (!Array.isArray(cards) || !cards.every(c => typeof c === 'string')) {
-            console.warn("Invalid format for stored strongest hand cards. Clearing.");
-            cards = undefined;
-            localStorage.removeItem("strongestHandActualCards");
-          }
-        } catch (error) {
-          console.error("Error parsing strongest hand cards from local storage:", error);
-          cards = undefined;
-          localStorage.removeItem("strongestHandActualCards"); // Clear invalid data
-        }
-      }
-
+    if (name && rankStr) {
+      const rank = parseInt(rankStr, 10);
       if (!isNaN(rank)) {
-        const loadedHand: StrongestHandData = { name: storedStrongestHandName, rank: rank };
-        if (cards) {
-          loadedHand.cards = cards;
+        const loadedHand: StrongestHandData = { type: name, rank: rank, name: name }; // type and name are the same here
+
+        if (cardsStr) {
+          try {
+            const cards = JSON.parse(cardsStr);
+            if (Array.isArray(cards) && cards.every(c => typeof c === 'string')) {
+              loadedHand.cards = cards;
+            } else { localStorage.removeItem("strongestHandActualCards"); }
+          } catch { localStorage.removeItem("strongestHandActualCards"); }
+        }
+        if (primaryRankValueStr) {
+          const val = parseInt(primaryRankValueStr, 10);
+          if (!isNaN(val)) loadedHand.primaryRankValue = val;
+          else localStorage.removeItem("strongestHandPrimaryRank");
+        }
+        if (secondaryRankValueStr) {
+          const val = parseInt(secondaryRankValueStr, 10);
+          if (!isNaN(val)) loadedHand.secondaryRankValue = val;
+          else localStorage.removeItem("strongestHandSecondaryRank");
+        }
+        if (kickerRankValuesStr) {
+          try {
+            const kickers = JSON.parse(kickerRankValuesStr);
+            if (Array.isArray(kickers) && kickers.every(k => typeof k === 'number')) {
+              loadedHand.kickerRankValues = kickers;
+            } else { localStorage.removeItem("strongestHandKickers"); }
+          } catch { localStorage.removeItem("strongestHandKickers"); }
         }
         setStrongestHand(loadedHand);
         console.log("Loaded strongest hand:", loadedHand);
       } else {
+        // Clear all if essential parts are missing/invalid
         localStorage.removeItem("strongestHandName");
         localStorage.removeItem("strongestHandRank");
         localStorage.removeItem("strongestHandActualCards");
+        localStorage.removeItem("strongestHandPrimaryRank");
+        localStorage.removeItem("strongestHandSecondaryRank");
+        localStorage.removeItem("strongestHandKickers");
       }
     }
     if (storedWins) {
@@ -91,19 +108,37 @@ const App = () => {
   // Update local storage when state changes
   useEffect(() => {
     if (strongestHand !== null) {
-      localStorage.setItem("strongestHandName", strongestHand.name);
+      localStorage.setItem("strongestHandName", strongestHand.name); // or strongestHand.type
       localStorage.setItem("strongestHandRank", strongestHand.rank.toString());
+
       if (strongestHand.cards && strongestHand.cards.length > 0) {
         localStorage.setItem("strongestHandActualCards", JSON.stringify(strongestHand.cards));
       } else {
-        // If there are no cards (e.g. old data or an issue), remove the item
         localStorage.removeItem("strongestHandActualCards");
+      }
+      if (strongestHand.primaryRankValue !== undefined) {
+        localStorage.setItem("strongestHandPrimaryRank", strongestHand.primaryRankValue.toString());
+      } else {
+        localStorage.removeItem("strongestHandPrimaryRank");
+      }
+      if (strongestHand.secondaryRankValue !== undefined) {
+        localStorage.setItem("strongestHandSecondaryRank", strongestHand.secondaryRankValue.toString());
+      } else {
+        localStorage.removeItem("strongestHandSecondaryRank");
+      }
+      if (strongestHand.kickerRankValues && strongestHand.kickerRankValues.length > 0) {
+        localStorage.setItem("strongestHandKickers", JSON.stringify(strongestHand.kickerRankValues));
+      } else {
+        localStorage.removeItem("strongestHandKickers");
       }
       console.log("Saved strongest hand:", strongestHand);
     } else {
       localStorage.removeItem("strongestHandName");
       localStorage.removeItem("strongestHandRank");
-      localStorage.removeItem("strongestHandActualCards"); // Also clear cards
+      localStorage.removeItem("strongestHandActualCards");
+      localStorage.removeItem("strongestHandPrimaryRank");
+      localStorage.removeItem("strongestHandSecondaryRank");
+      localStorage.removeItem("strongestHandKickers");
       console.log("Cleared strongest hand from local storage.");
     }
   }, [strongestHand]);
@@ -118,25 +153,117 @@ const App = () => {
     console.log("Saved losses:", losses);
   }, [losses]);
 
-  // Example functions to update game data (replace with actual game logic)
-  const handleWin = (handTypeName: string, winningCards: string[]) => { // Added winningCards parameter
-    setWins((prevWins) => prevWins + 1);
-    const currentHandRank = handStrengthOrder[handTypeName];
+  // Function to compare kickers array by array
+  const compareKickers = (kickerA: number[] | undefined, kickerB: number[] | undefined): number => {
+    if (!kickerA && !kickerB) return 0; // Both undefined or empty
+    if (!kickerA) return -1; // A is weaker (no kickers)
+    if (!kickerB) return 1;  // B is weaker (no kickers)
 
-    if (currentHandRank === undefined) {
-      console.warn(`Unknown hand type received: ${handTypeName}. Strongest hand not updated.`);
+    for (let i = 0; i < Math.min(kickerA.length, kickerB.length); i++) {
+      if (kickerA[i] > kickerB[i]) return 1;
+      if (kickerA[i] < kickerB[i]) return -1;
+    }
+    // If all compared kickers are equal, the one with more kickers (if any) might be considered,
+    // but typically poker hands have a fixed number of kickers compared.
+    // For simplicity, if prefixes match, consider them equal here.
+    return 0;
+  };
+
+  const handleWin = (currentHandDetails: HandStrength, winningCards: string[]) => {
+    setWins((prevWins) => prevWins + 1);
+
+    if (currentHandDetails.rank === undefined || handStrengthOrder[currentHandDetails.type] === undefined) {
+      console.warn(`Unknown hand type or rank received: ${currentHandDetails.type}. Strongest hand not updated.`);
       return;
     }
 
-    // Logic to update strongestHand if the current hand is stronger
-    if (strongestHand === null || currentHandRank > strongestHand.rank) {
-      setStrongestHand({ name: handTypeName, rank: currentHandRank, cards: winningCards });
-      console.log(`New strongest hand: ${handTypeName} (Rank: ${currentHandRank}, Cards: ${winningCards.join(', ')})`);
-    } else if (currentHandRank === strongestHand.rank) {
-      // Optional: Tie-breaking logic could be added here.
-      // For now, if ranks are equal, we keep the existing strongest hand.
-      // If you wanted to update to the most recent of equal strength, you could call setStrongestHand here too.
-      console.log(`Current hand ${handTypeName} (Rank: ${currentHandRank}, Cards: ${winningCards.join(', ')}) is same strength as strongest hand ${strongestHand.name} (Rank: ${strongestHand.rank}). Not updated.`);
+    const newHandData: StrongestHandData = { ...currentHandDetails, cards: winningCards };
+
+    if (strongestHand === null || newHandData.rank > strongestHand.rank) {
+      setStrongestHand(newHandData);
+      console.log(`New strongest hand: ${newHandData.name} (Rank: ${newHandData.rank}, Cards: ${newHandData.cards?.join(', ')})`);
+    } else if (newHandData.rank === strongestHand.rank) {
+      let newHandIsStrongerInTie = false;
+      // Implement tie-breaking logic based on hand type
+      switch (newHandData.type) {
+        case "Royal Flush": // Already highest, no tie-breaker needed beyond rank
+          break;
+        case "Straight Flush":
+        case "Straight":
+        case "Flush": // For flushes and straights, primaryRankValue is the high card
+          if (newHandData.primaryRankValue && strongestHand.primaryRankValue && newHandData.primaryRankValue > strongestHand.primaryRankValue) {
+            newHandIsStrongerInTie = true;
+          } else if (newHandData.primaryRankValue === strongestHand.primaryRankValue) {
+             // If primary high cards are same, compare all kicker cards (which are the hand cards themselves for these types)
+            if (compareKickers(newHandData.kickerRankValues, strongestHand.kickerRankValues) > 0) {
+              newHandIsStrongerInTie = true;
+            }
+          }
+          break;
+        case "Four of a Kind":
+          if (newHandData.primaryRankValue && strongestHand.primaryRankValue && newHandData.primaryRankValue > strongestHand.primaryRankValue) {
+            newHandIsStrongerInTie = true;
+          } else if (newHandData.primaryRankValue === strongestHand.primaryRankValue) {
+            if (compareKickers(newHandData.kickerRankValues, strongestHand.kickerRankValues) > 0) {
+              newHandIsStrongerInTie = true;
+            }
+          }
+          break;
+        case "Full House":
+          if (newHandData.primaryRankValue && strongestHand.primaryRankValue && newHandData.primaryRankValue > strongestHand.primaryRankValue) {
+            newHandIsStrongerInTie = true;
+          } else if (newHandData.primaryRankValue === strongestHand.primaryRankValue) {
+            if (newHandData.secondaryRankValue && strongestHand.secondaryRankValue && newHandData.secondaryRankValue > strongestHand.secondaryRankValue) {
+              newHandIsStrongerInTie = true;
+            }
+          }
+          break;
+        case "Three of a Kind":
+          if (newHandData.primaryRankValue && strongestHand.primaryRankValue && newHandData.primaryRankValue > strongestHand.primaryRankValue) {
+            newHandIsStrongerInTie = true;
+          } else if (newHandData.primaryRankValue === strongestHand.primaryRankValue) {
+            if (compareKickers(newHandData.kickerRankValues, strongestHand.kickerRankValues) > 0) {
+              newHandIsStrongerInTie = true;
+            }
+          }
+          break;
+        case "Two Pair":
+          if (newHandData.primaryRankValue && strongestHand.primaryRankValue && newHandData.primaryRankValue > strongestHand.primaryRankValue) {
+            newHandIsStrongerInTie = true;
+          } else if (newHandData.primaryRankValue === strongestHand.primaryRankValue) {
+            if (newHandData.secondaryRankValue && strongestHand.secondaryRankValue && newHandData.secondaryRankValue > strongestHand.secondaryRankValue) {
+              newHandIsStrongerInTie = true;
+            } else if (newHandData.secondaryRankValue === strongestHand.secondaryRankValue) {
+              if (compareKickers(newHandData.kickerRankValues, strongestHand.kickerRankValues) > 0) {
+                newHandIsStrongerInTie = true;
+              }
+            }
+          }
+          break;
+        case "One Pair":
+          if (newHandData.primaryRankValue && strongestHand.primaryRankValue && newHandData.primaryRankValue > strongestHand.primaryRankValue) {
+            newHandIsStrongerInTie = true;
+          } else if (newHandData.primaryRankValue === strongestHand.primaryRankValue) {
+            if (compareKickers(newHandData.kickerRankValues, strongestHand.kickerRankValues) > 0) {
+              newHandIsStrongerInTie = true;
+            }
+          }
+          break;
+        case "High Card":
+          if (compareKickers(newHandData.kickerRankValues, strongestHand.kickerRankValues) > 0) {
+            newHandIsStrongerInTie = true;
+          }
+          break;
+        default: // Should not happen if hand types are well-defined
+          console.warn("Unhandled hand type in tie-breaking:", newHandData.type);
+      }
+
+      if (newHandIsStrongerInTie) {
+        setStrongestHand(newHandData);
+        console.log(`New strongest hand (tie-broken): ${newHandData.name} (Rank: ${newHandData.rank}, Primary: ${newHandData.primaryRankValue}, Cards: ${newHandData.cards?.join(', ')})`);
+      } else {
+        console.log(`Current hand ${newHandData.name} (Rank: ${newHandData.rank}, Primary: ${newHandData.primaryRankValue}) is same or weaker strength as strongest hand ${strongestHand.name} (Rank: ${strongestHand.rank}, Primary: ${strongestHand.primaryRankValue}). Not updated.`);
+      }
     }
   };
 

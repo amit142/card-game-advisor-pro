@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"; // Assuming this is the correct path for Select
 
-import { evaluateHandStrength } from '@/utils/pokerCalculator'; // Import the function
+import { evaluateHandStrength, type HandStrength } from '@/utils/pokerCalculator'; // Import evaluateHandStrength and HandStrength type
 
 // Standard poker positions
 const POSITIONS_10_MAX = ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'MP1', 'LJ', 'HJ', 'CO', 'BTN'];
@@ -72,7 +72,7 @@ interface IndexProps {
   strongestHand: string | null; // This will still be the name for display
   wins: number;
   losses: number;
-  handleWin: (handTypeName: string, winningCards: string[]) => void; // Updated signature
+  handleWin: (handDetails: HandStrength, winningCards: string[]) => void; // Expects full HandStrength object
   handleLoss: () => void;
 }
 
@@ -203,29 +203,28 @@ const Index = ({ strongestHand, wins, losses, handleWin: appHandleWin, handleLos
     // It's possible to win before 5 cards are dealt (e.g., everyone folds).
     // In such cases, we might not have a "hand" to evaluate for strongest hand purposes,
     // or we might pass a generic string like "Won Pre-Community".
-    // For now, we only evaluate and pass cards if a 5-card hand can be formed.
-    if (allCards.length >= 2 && gameState.holeCards.length === 2) { // Need at least hole cards to have a "hand"
+    if (allCards.length >= 2 && gameState.holeCards.length === 2) {
       if (allCards.length >= 5) {
-        const handStrength = evaluateHandStrength(allCards);
-        appHandleWin(handStrength.type, allCards); // Pass evaluated hand type and the cards
+        const handDetails = evaluateHandStrength(allCards); // Get the full HandStrength object
+        appHandleWin(handDetails, allCards); // Pass the full handDetails object and the cards
       } else {
-        // Won with fewer than 5 cards (e.g. pre-flop, or on flop/turn if opponents fold)
-        // We can still record the win, but the "strongest hand" might be just the hole cards
-        // or a generic "Won before showdown".
-        // For now, let's pass the hole cards as the "winning cards" and a generic type.
-        // App.tsx's handStrengthOrder would need to handle "Won Early" or similar if we want to rank this.
-        // Alternatively, App.tsx could choose not to update strongestHand if type is "Won Early".
-        // For this iteration, we'll send the available cards and a generic description.
-        // App.tsx will need to decide how to rank/store "Won Early" or if it should ignore it for "strongest hand".
-        // A simple approach is for App.tsx to ignore "Won Early" for strongest hand tracking.
-        appHandleWin("Won Before Showdown", gameState.holeCards);
-        console.log("Win recorded before 5 cards. Sent hole cards and 'Won Before Showdown'.");
+        // Win before 5 cards are dealt. Create a minimal HandStrength object.
+        // App.tsx will likely ignore this for "strongest hand" if "Won Before Showdown" isn't in handStrengthOrder
+        // or has a very low/special rank.
+        const handDetails: HandStrength = {
+          type: "Won Before Showdown",
+          rank: -1, // Or some other indicator that it's not a standard poker hand rank
+          // primaryRankValue, secondaryRankValue, kickerRankValues would be undefined
+        };
+        appHandleWin(handDetails, gameState.holeCards);
+        console.log("Win recorded before 5 cards. Sent minimal hand details and hole cards.");
       }
     } else {
-      // This case should ideally not happen if a win is recorded, implies no hole cards.
-      // Or, if game logic allows winning without any cards shown by hero (e.g. walk in BB).
-      // For now, we will call appHandleWin with a generic type and empty cards.
-      appHandleWin("Won (No Cards Shown)", []);
+      const handDetails: HandStrength = {
+        type: "Won (No Cards Shown)",
+        rank: -1,
+      };
+      appHandleWin(handDetails, []);
       console.warn("Win recorded, but no hole cards available for strongest hand evaluation.");
     }
     setGameState(prev => ({

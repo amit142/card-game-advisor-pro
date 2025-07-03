@@ -1,7 +1,10 @@
 export interface HandStrength {
-  type: string;
-  rank: number;
-  kicker?: number;
+  type: string; // e.g., "Four of a Kind", "Flush"
+  rank: number; // Numerical rank of the hand type (e.g., Four of a Kind = 7)
+  primaryRankValue?: number; // Rank of the primary cards (e.g., rank of the 4 cards in 4-of-a-kind, rank of triplet in Full House)
+  secondaryRankValue?: number; // Rank of secondary cards (e.g., rank of pair in Full House, rank of lower pair in Two Pair)
+  kickerRankValues?: number[]; // Sorted array of kicker card ranks (high to low)
+  // kicker?: number; // This was the old kicker, can be removed or repurposed if only single kicker needed.
 }
 
 export const calculateWinProbability = (
@@ -51,44 +54,138 @@ export const evaluateHandStrength = (cards: string[]): HandStrength => {
   const hasStraight = checkStraight(sortedRanks);
 
   // Basic Ace-low straight check (A2345)
-  const isAceLowStraight = (evalRanks: number[]) => { // Changed parameter name to avoid conflict
+  const isAceLowStraight = (evalRanks: number[]) => {
     const uniqueSortedRanks = [...new Set(evalRanks)].sort((a, b) => a - b);
     return uniqueSortedRanks.length >= 5 &&
-           uniqueSortedRanks.includes(14) && // Ace
-           uniqueSortedRanks.includes(2) &&
-           uniqueSortedRanks.includes(3) &&
-           uniqueSortedRanks.includes(4) &&
+           uniqueSortedRanks.includes(14) && uniqueSortedRanks.includes(2) &&
+           uniqueSortedRanks.includes(3) && uniqueSortedRanks.includes(4) &&
            uniqueSortedRanks.includes(5);
   };
 
+  const getKickers = (allCardRanks: number[], usedRanks: number[], count: number = 5): number[] => {
+    const remainingRanks = allCardRanks.filter(r => !usedRanks.includes(r));
+    return remainingRanks.sort((a, b) => b - a).slice(0, count - usedRanks.length);
+  };
+
+  const getTopNRanks = (rankMap: Record<number, number>, n: number, count: number): number[] => {
+    return Object.entries(rankMap)
+      .filter(([_, c]) => c === count)
+      .map(([r, _]) => parseInt(r))
+      .sort((a, b) => b - a)
+      .slice(0, n);
+  };
+
+
+  // Royal Flush
   if (hasFlush && hasStraight) {
-    // Check for Royal Flush (A, K, Q, J, 10 of same suit)
-    const flushSuit = Object.entries(suitCounts).find(([_,count]) => count >= 5)?.[0];
+    const flushSuit = Object.entries(suitCounts).find(([_, count]) => count >= 5)?.[0];
     if (flushSuit) {
-        const flushCardsRanks = cards.filter(c => c.endsWith(flushSuit)).map(c => getRankValue(c.slice(0,-1)));
-        const royalFlushRanks = [14, 13, 12, 11, 10];
-        if (royalFlushRanks.every(rank => flushCardsRanks.includes(rank))) {
-            return { type: 'Royal Flush', rank: 9 }; // Assign rank 9 for Royal Flush
-        }
+      const flushCardRanks = cards.filter(c => c.endsWith(flushSuit)).map(c => getRankValue(c.slice(0, -1))).sort((a,b)=> b-a);
+      const royalFlushRanksRequired = [14, 13, 12, 11, 10];
+      if (royalFlushRanksRequired.every(rank => flushCardRanks.includes(rank))) {
+        return { type: 'Royal Flush', rank: 9, kickerRankValues: royalFlushRanksRequired };
+      }
+      // Straight Flush
+      // Check for straight within the flush cards
+      let straightFlushHighCard = 0;
+      const uniqueFlushRanks = [...new Set(flushCardRanks)].sort((a,b) => b-a); // sorted high to low
+      if (uniqueFlushRanks.includes(14) && uniqueFlushRanks.includes(2) && uniqueFlushRanks.includes(3) && uniqueFlushRanks.includes(4) && uniqueFlushRanks.includes(5)) { // Ace-low SF (5 high)
+          straightFlushHighCard = 5;
+          return { type: 'Straight Flush', rank: 8, primaryRankValue: 5, kickerRankValues: [5,4,3,2,14] };
+      }
+      for (let i = 0; i <= uniqueFlushRanks.length - 5; i++) {
+          let isSf = true;
+          for (let j = 0; j < 4; j++) {
+              if (uniqueFlushRanks[i+j] - 1 !== uniqueFlushRanks[i+j+1]) {
+                  isSf = false;
+                  break;
+              }
+          }
+          if (isSf) {
+              straightFlushHighCard = uniqueFlushRanks[i];
+              return { type: 'Straight Flush', rank: 8, primaryRankValue: straightFlushHighCard, kickerRankValues: uniqueFlushRanks.slice(i, i+5) };
+          }
+      }
     }
-    return { type: 'Straight Flush', rank: 8 };
   }
-  if (Object.values(rankCounts).includes(4)) return { type: 'Four of a Kind', rank: 7 };
-  // A bit more robust check for full house:
-  // It needs one rank with count 3, and another rank with count >= 2
-  const counts = Object.values(rankCounts);
-  if (counts.includes(3) && counts.some(c => c >= 2 && c !== 3)) { // Ensure the pair is of a different rank than the three-of-a-kind
-      return { type: 'Full House', rank: 6 };
+
+  // Four of a Kind
+  const fourOfAKindRank = getTopNRanks(rankCounts, 1, 4)[0];
+  if (fourOfAKindRank) {
+    const kicker = getKickers(sortedRanks, [fourOfAKindRank, fourOfAKindRank, fourOfAKindRank, fourOfAKindRank], 1)[0];
+    return { type: 'Four of a Kind', rank: 7, primaryRankValue: fourOfAKindRank, kickerRankValues: kicker ? [kicker] : [] };
   }
-  if (hasFlush) return { type: 'Flush', rank: 5 };
-  if (hasStraight || isAceLowStraight(ranks)) return { type: 'Straight', rank: 4 }; // Use original 'ranks' for isAceLowStraight
-  if (Object.values(rankCounts).includes(3)) return { type: 'Three of a Kind', rank: 3 };
 
-  const pairCounts = Object.values(rankCounts).filter(count => count === 2).length;
-  if (pairCounts >= 2) return { type: 'Two Pair', rank: 2 };
-  if (Object.values(rankCounts).some(count => count === 2)) return { type: 'One Pair', rank: 1 };
+  // Full House
+  const tripletRank = getTopNRanks(rankCounts, 1, 3)[0];
+  if (tripletRank) {
+    const pairRankForFullHouse = Object.entries(rankCounts)
+      .filter(([r, count]) => count >= 2 && parseInt(r) !== tripletRank)
+      .map(([r, _]) => parseInt(r))
+      .sort((a,b) => b-a)[0];
+    if (pairRankForFullHouse) {
+      return { type: 'Full House', rank: 6, primaryRankValue: tripletRank, secondaryRankValue: pairRankForFullHouse };
+    }
+  }
 
-  return { type: 'High Card', rank: 0, kicker: Math.max(...ranks.filter(rank => rank > 0)) }; // Ensure Math.max doesn't get empty array if ranks is empty
+  // Flush
+  if (hasFlush) {
+    const flushSuit = Object.entries(suitCounts).find(([_, count]) => count >= 5)?.[0];
+    if (flushSuit) {
+      const flushCardRanks = cards.filter(c => c.endsWith(flushSuit)).map(c => getRankValue(c.slice(0, -1))).sort((a, b) => b - a).slice(0, 5);
+      return { type: 'Flush', rank: 5, kickerRankValues: flushCardRanks, primaryRankValue: flushCardRanks[0] };
+    }
+  }
+
+  // Straight
+  if (hasStraight || isAceLowStraight(ranks)) {
+      let straightHighCard = 0;
+      let straightRanks: number[] = [];
+      if (isAceLowStraight(ranks)) {
+          straightHighCard = 5; // Ace is low in A2345 straight
+          straightRanks = [5,4,3,2,14]; // Ace represented as 14 but is lowest for this straight
+      } else {
+          for (let i = 0; i <= sortedRanks.length - 5; i++) {
+              let isCurrentStraight = true;
+              for (let j = 0; j < 4; j++) {
+                  if (sortedRanks[i+j] - 1 !== sortedRanks[i+j+1]) {
+                      isCurrentStraight = false;
+                      break;
+                  }
+              }
+              if (isCurrentStraight) {
+                  straightHighCard = sortedRanks[i];
+                  straightRanks = sortedRanks.slice(i, i+5);
+                  break;
+              }
+          }
+      }
+      return { type: 'Straight', rank: 4, primaryRankValue: straightHighCard, kickerRankValues: straightRanks };
+  }
+
+  // Three of a Kind
+  if (tripletRank) { // Re-use tripletRank from Full House check
+    const kickers = getKickers(sortedRanks, [tripletRank, tripletRank, tripletRank], 2);
+    return { type: 'Three of a Kind', rank: 3, primaryRankValue: tripletRank, kickerRankValues: kickers };
+  }
+
+  // Two Pair
+  const twoPairRanks = getTopNRanks(rankCounts, 2, 2);
+  if (twoPairRanks.length === 2) {
+    const kicker = getKickers(sortedRanks, [...twoPairRanks, ...twoPairRanks], 1)[0]; // Pass 4 used ranks
+    return { type: 'Two Pair', rank: 2, primaryRankValue: twoPairRanks[0], secondaryRankValue: twoPairRanks[1], kickerRankValues: kicker ? [kicker] : [] };
+  }
+
+  // One Pair
+  const onePairRank = getTopNRanks(rankCounts, 1, 2)[0];
+  if (onePairRank) {
+    const kickers = getKickers(sortedRanks, [onePairRank, onePairRank], 3);
+    return { type: 'One Pair', rank: 1, primaryRankValue: onePairRank, kickerRankValues: kickers };
+  }
+
+  // High Card
+  const highCardKickers = sortedRanks.slice(0, 5);
+  return { type: 'High Card', rank: 0, primaryRankValue: highCardKickers[0], kickerRankValues: highCardKickers };
 };
 
 const calculatePreflopEquity = (holeCards: string[], opponents: number): number => {
