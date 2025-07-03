@@ -29,6 +29,71 @@ export const calculateWinProbability = (
   return Math.max(5, Math.min(95, Math.round(probability)));
 };
 
+// Exporting evaluateHandStrength for use in other parts of the application
+export const evaluateHandStrength = (cards: string[]): HandStrength => {
+  const ranks = cards.map(card => getRankValue(card.slice(0, -1)));
+  const suits = cards.map(card => card.slice(-1));
+
+  const rankCounts = ranks.reduce((acc, rank) => {
+    acc[rank] = (acc[rank] || 0) + 1;
+    return acc;
+  }, {} as Record<number, number>);
+
+  const suitCounts = suits.reduce((acc, suit) => {
+    acc[suit] = (acc[suit] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const pairs = Object.entries(rankCounts).filter(([_, count]) => count >= 2);
+  const hasFlush = Object.values(suitCounts).some(count => count >= 5);
+  const sortedRanks = [...new Set(ranks)].sort((a, b) => b - a);
+
+  const hasStraight = checkStraight(sortedRanks);
+
+  // Basic Ace-low straight check (A2345)
+  const isAceLowStraight = (ranks: number[]) => {
+    const uniqueSortedRanks = [...new Set(ranks)].sort((a, b) => a - b);
+    return uniqueSortedRanks.length >= 5 &&
+           uniqueSortedRanks.includes(14) && // Ace
+           uniqueSortedRanks.includes(2) &&
+           uniqueSortedRanks.includes(3) &&
+           uniqueSortedRanks.includes(4) &&
+           uniqueSortedRanks.includes(5);
+  };
+
+  if (hasFlush && hasStraight) {
+    // Check for Royal Flush (A, K, Q, J, 10 of same suit)
+    const flushSuit = Object.entries(suitCounts).find(([_,count]) => count >= 5)?.[0];
+    if (flushSuit) {
+        const flushCardsRanks = cards.filter(c => c.endsWith(flushSuit)).map(c => getRankValue(c.slice(0,-1)));
+        const royalFlushRanks = [14, 13, 12, 11, 10];
+        if (royalFlushRanks.every(rank => flushCardsRanks.includes(rank))) {
+            return { type: 'Royal Flush', rank: 9 }; // Assign rank 9 for Royal Flush
+        }
+    }
+    return { type: 'Straight Flush', rank: 8 };
+  }
+  if (Object.values(rankCounts).includes(4)) return { type: 'Four of a Kind', rank: 7 };
+  if (Object.values(rankCounts).some(count => count === 3) && pairs.length > 1 && pairs.some(p => parseInt(Object.keys(p)[0]) > 0 && Object.values(p)[0] >=2 )) { // check if one of the pairs has count >=2
+    // A bit more robust check for full house:
+    // It needs one rank with count 3, and another rank with count >= 2
+    const counts = Object.values(rankCounts);
+    if (counts.includes(3) && counts.some(c => c >= 2 && c !== 3)) {
+        return { type: 'Full House', rank: 6 };
+    }
+  }
+  if (hasFlush) return { type: 'Flush', rank: 5 };
+  if (hasStraight || isAceLowStraight(ranks)) return { type: 'Straight', rank: 4 };
+  if (Object.values(rankCounts).includes(3)) return { type: 'Three of a Kind', rank: 3 };
+
+  // Adjusted Two Pair logic: ensure there are at least two distinct ranks with counts of 2 or more.
+  const pairCounts = Object.values(rankCounts).filter(count => count === 2).length;
+  if (pairCounts >= 2) return { type: 'Two Pair', rank: 2 };
+  if (Object.values(rankCounts).some(count => count === 2)) return { type: 'One Pair', rank: 1 }; // Changed from pairs.length === 1
+
+  return { type: 'High Card', rank: 0, kicker: Math.max(...ranks) };
+};
+
 const calculatePreflopEquity = (holeCards: string[], opponents: number): number => {
   const [card1, card2] = holeCards;
   const rank1 = card1.slice(0, -1);

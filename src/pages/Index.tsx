@@ -9,6 +9,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"; // Assuming this is the correct path for Select
 
+import { evaluateHandStrength } from '@/utils/pokerCalculator'; // Import the function
+
 // Standard poker positions
 const POSITIONS_10_MAX = ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'MP1', 'LJ', 'HJ', 'CO', 'BTN'];
 const POSITIONS_FULL_RING = ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN']; // 9-max
@@ -197,10 +199,22 @@ const Index = ({ strongestHand, wins, losses, handleWin: appHandleWin, handleLos
   };
 
   const handleWin = () => {
-    // TODO: Determine the actual hand string to pass to appHandleWin
-    // For now, using a placeholder. This needs to be updated with game logic.
-    const currentHand = gameState.holeCards.join(", ") + (gameState.communityCards.length > 0 ? ", " + gameState.communityCards.join(", ") : "");
-    appHandleWin(currentHand || "Unknown Hand");
+    const allCards = [...gameState.holeCards, ...gameState.communityCards];
+    if (allCards.length >= 5) { // Need at least 5 cards to make a poker hand
+      const handStrength = evaluateHandStrength(allCards);
+      // Pass the hand type (e.g., "Full House") to appHandleWin.
+      // The rank is implicitly handled by App.tsx's logic now.
+      appHandleWin(handStrength.type);
+    } else {
+      // Not enough cards to evaluate a hand, or hole cards not fully dealt.
+      // Decide if you want to record a win with an "Unknown Hand" or handle differently.
+      // For now, let's assume a win can only be registered if a hand can be formed.
+      // If game logic allows winning before 5 cards (e.g. all opponents fold pre-flop),
+      // this might need adjustment or a default hand string.
+      console.warn("Win recorded with less than 5 cards, strongest hand not evaluated for this win.");
+      // You could choose to call appHandleWin with a generic string if desired:
+      // appHandleWin("Won - Pre-flop/Early");
+    }
     setGameState(prev => ({
       ...prev,
       roundOutcomes: [...prev.roundOutcomes, 'win'],
