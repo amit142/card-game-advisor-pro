@@ -30,30 +30,52 @@ const queryClient = new QueryClient();
 interface StrongestHandData {
   name: string;
   rank: number;
+  cards?: string[]; // Added to store the actual cards
 }
 
 const App = () => {
-  // strongestHand state now stores an object { name: string, rank: number } or null
+  // strongestHand state now stores an object { name: string, rank: number, cards?: string[] } or null
   const [strongestHand, setStrongestHand] = useState<StrongestHandData | null>(null);
   const [wins, setWins] = useState<number>(0);
   const [losses, setLosses] = useState<number>(0);
 
   useEffect(() => {
     // Load data from local storage on component mount
-    const storedStrongestHandName = localStorage.getItem("strongestHandName"); // Changed key
-    const storedStrongestHandRank = localStorage.getItem("strongestHandRank"); // New key for rank
+    const storedStrongestHandName = localStorage.getItem("strongestHandName");
+    const storedStrongestHandRank = localStorage.getItem("strongestHandRank");
+    const storedStrongestHandCards = localStorage.getItem("strongestHandActualCards"); // Key for cards
     const storedWins = localStorage.getItem("wins");
     const storedLosses = localStorage.getItem("losses");
 
     if (storedStrongestHandName && storedStrongestHandRank) {
       const rank = parseInt(storedStrongestHandRank, 10);
+      let cards: string[] | undefined = undefined;
+      if (storedStrongestHandCards) {
+        try {
+          cards = JSON.parse(storedStrongestHandCards);
+          if (!Array.isArray(cards) || !cards.every(c => typeof c === 'string')) {
+            console.warn("Invalid format for stored strongest hand cards. Clearing.");
+            cards = undefined;
+            localStorage.removeItem("strongestHandActualCards");
+          }
+        } catch (error) {
+          console.error("Error parsing strongest hand cards from local storage:", error);
+          cards = undefined;
+          localStorage.removeItem("strongestHandActualCards"); // Clear invalid data
+        }
+      }
+
       if (!isNaN(rank)) {
-        setStrongestHand({ name: storedStrongestHandName, rank: rank });
-        console.log("Loaded strongest hand:", { name: storedStrongestHandName, rank: rank });
+        const loadedHand: StrongestHandData = { name: storedStrongestHandName, rank: rank };
+        if (cards) {
+          loadedHand.cards = cards;
+        }
+        setStrongestHand(loadedHand);
+        console.log("Loaded strongest hand:", loadedHand);
       } else {
-        // Handle case where rank is not a number, perhaps clear or default
         localStorage.removeItem("strongestHandName");
         localStorage.removeItem("strongestHandRank");
+        localStorage.removeItem("strongestHandActualCards");
       }
     }
     if (storedWins) {
@@ -69,13 +91,19 @@ const App = () => {
   // Update local storage when state changes
   useEffect(() => {
     if (strongestHand !== null) {
-      localStorage.setItem("strongestHandName", strongestHand.name); // Save name
-      localStorage.setItem("strongestHandRank", strongestHand.rank.toString()); // Save rank
+      localStorage.setItem("strongestHandName", strongestHand.name);
+      localStorage.setItem("strongestHandRank", strongestHand.rank.toString());
+      if (strongestHand.cards && strongestHand.cards.length > 0) {
+        localStorage.setItem("strongestHandActualCards", JSON.stringify(strongestHand.cards));
+      } else {
+        // If there are no cards (e.g. old data or an issue), remove the item
+        localStorage.removeItem("strongestHandActualCards");
+      }
       console.log("Saved strongest hand:", strongestHand);
     } else {
-      // If strongestHand becomes null (e.g., after a reset), remove from localStorage
       localStorage.removeItem("strongestHandName");
       localStorage.removeItem("strongestHandRank");
+      localStorage.removeItem("strongestHandActualCards"); // Also clear cards
       console.log("Cleared strongest hand from local storage.");
     }
   }, [strongestHand]);
@@ -91,7 +119,7 @@ const App = () => {
   }, [losses]);
 
   // Example functions to update game data (replace with actual game logic)
-  const handleWin = (handTypeName: string) => { // handTypeName is e.g., "Full House"
+  const handleWin = (handTypeName: string, winningCards: string[]) => { // Added winningCards parameter
     setWins((prevWins) => prevWins + 1);
     const currentHandRank = handStrengthOrder[handTypeName];
 
@@ -100,14 +128,15 @@ const App = () => {
       return;
     }
 
+    // Logic to update strongestHand if the current hand is stronger
     if (strongestHand === null || currentHandRank > strongestHand.rank) {
-      setStrongestHand({ name: handTypeName, rank: currentHandRank });
-      console.log(`New strongest hand: ${handTypeName} (Rank: ${currentHandRank})`);
+      setStrongestHand({ name: handTypeName, rank: currentHandRank, cards: winningCards });
+      console.log(`New strongest hand: ${handTypeName} (Rank: ${currentHandRank}, Cards: ${winningCards.join(', ')})`);
     } else if (currentHandRank === strongestHand.rank) {
-      // Optional: Handle tie-breaking here if desired (e.g. comparing kickers for High Card or Pairs)
+      // Optional: Tie-breaking logic could be added here.
       // For now, if ranks are equal, we keep the existing strongest hand.
-      // You could also update it to the new hand if it's the same rank, e.g. to show the most recent.
-      console.log(`Current hand ${handTypeName} (Rank: ${currentHandRank}) is same strength as strongest hand ${strongestHand.name} (Rank: ${strongestHand.rank}). Not updated.`);
+      // If you wanted to update to the most recent of equal strength, you could call setStrongestHand here too.
+      console.log(`Current hand ${handTypeName} (Rank: ${currentHandRank}, Cards: ${winningCards.join(', ')}) is same strength as strongest hand ${strongestHand.name} (Rank: ${strongestHand.rank}). Not updated.`);
     }
   };
 

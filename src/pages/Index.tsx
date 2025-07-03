@@ -69,10 +69,10 @@ interface GameState {
 }
 
 interface IndexProps {
-  strongestHand: string | null;
+  strongestHand: string | null; // This will still be the name for display
   wins: number;
   losses: number;
-  handleWin: (hand: string) => void;
+  handleWin: (handTypeName: string, winningCards: string[]) => void; // Updated signature
   handleLoss: () => void;
 }
 
@@ -200,20 +200,33 @@ const Index = ({ strongestHand, wins, losses, handleWin: appHandleWin, handleLos
 
   const handleWin = () => {
     const allCards = [...gameState.holeCards, ...gameState.communityCards];
-    if (allCards.length >= 5) { // Need at least 5 cards to make a poker hand
-      const handStrength = evaluateHandStrength(allCards);
-      // Pass the hand type (e.g., "Full House") to appHandleWin.
-      // The rank is implicitly handled by App.tsx's logic now.
-      appHandleWin(handStrength.type);
+    // It's possible to win before 5 cards are dealt (e.g., everyone folds).
+    // In such cases, we might not have a "hand" to evaluate for strongest hand purposes,
+    // or we might pass a generic string like "Won Pre-Community".
+    // For now, we only evaluate and pass cards if a 5-card hand can be formed.
+    if (allCards.length >= 2 && gameState.holeCards.length === 2) { // Need at least hole cards to have a "hand"
+      if (allCards.length >= 5) {
+        const handStrength = evaluateHandStrength(allCards);
+        appHandleWin(handStrength.type, allCards); // Pass evaluated hand type and the cards
+      } else {
+        // Won with fewer than 5 cards (e.g. pre-flop, or on flop/turn if opponents fold)
+        // We can still record the win, but the "strongest hand" might be just the hole cards
+        // or a generic "Won before showdown".
+        // For now, let's pass the hole cards as the "winning cards" and a generic type.
+        // App.tsx's handStrengthOrder would need to handle "Won Early" or similar if we want to rank this.
+        // Alternatively, App.tsx could choose not to update strongestHand if type is "Won Early".
+        // For this iteration, we'll send the available cards and a generic description.
+        // App.tsx will need to decide how to rank/store "Won Early" or if it should ignore it for "strongest hand".
+        // A simple approach is for App.tsx to ignore "Won Early" for strongest hand tracking.
+        appHandleWin("Won Before Showdown", gameState.holeCards);
+        console.log("Win recorded before 5 cards. Sent hole cards and 'Won Before Showdown'.");
+      }
     } else {
-      // Not enough cards to evaluate a hand, or hole cards not fully dealt.
-      // Decide if you want to record a win with an "Unknown Hand" or handle differently.
-      // For now, let's assume a win can only be registered if a hand can be formed.
-      // If game logic allows winning before 5 cards (e.g. all opponents fold pre-flop),
-      // this might need adjustment or a default hand string.
-      console.warn("Win recorded with less than 5 cards, strongest hand not evaluated for this win.");
-      // You could choose to call appHandleWin with a generic string if desired:
-      // appHandleWin("Won - Pre-flop/Early");
+      // This case should ideally not happen if a win is recorded, implies no hole cards.
+      // Or, if game logic allows winning without any cards shown by hero (e.g. walk in BB).
+      // For now, we will call appHandleWin with a generic type and empty cards.
+      appHandleWin("Won (No Cards Shown)", []);
+      console.warn("Win recorded, but no hole cards available for strongest hand evaluation.");
     }
     setGameState(prev => ({
       ...prev,
