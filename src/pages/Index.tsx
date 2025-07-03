@@ -52,6 +52,7 @@ export const getAvailablePositions = (numberOfPlayers: number): string[] => {
 import CardSelector from '@/components/CardSelector';
 import PositionSelector from '@/components/PositionSelector';
 import GameStage from '@/components/GameStage';
+import CurrentHandDisplay from '@/components/CurrentHandDisplay'; // Import the new component
 
 import { RotateCcw, TrendingUp, AlertTriangle, Target, Users, Trash2, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { calculateWinProbability } from '@/utils/pokerCalculator';
@@ -208,8 +209,9 @@ const Index = ({ strongestHand, wins, losses, handleWin: appHandleWin, handleLos
     // or we might pass a generic string like "Won Pre-Community".
     if (allCards.length >= 2 && gameState.holeCards.length === 2) {
       if (allCards.length >= 5) {
-        const handDetails = evaluateHandStrength(allCards); // Get the full HandStrength object
-        appHandleWin(handDetails, allCards); // Pass the full handDetails object and the cards
+        const handDetails = evaluateHandStrength(allCards);
+        console.log("Index.tsx - handDetails received from evaluateHandStrength (>=5 cards):", JSON.stringify(handDetails)); // Added log
+        appHandleWin(handDetails, allCards);
       } else {
         // Win before 5 cards are dealt. Create a minimal HandStrength object.
         // App.tsx will likely ignore this for "strongest hand" if "Won Before Showdown" isn't in handStrengthOrder
@@ -219,14 +221,16 @@ const Index = ({ strongestHand, wins, losses, handleWin: appHandleWin, handleLos
           rank: -1, // Or some other indicator that it's not a standard poker hand rank
           // primaryRankValue, secondaryRankValue, kickerRankValues would be undefined
         };
+        console.log("Index.tsx - handDetails for 'Won Before Showdown':", JSON.stringify(handDetails)); // Added log
         appHandleWin(handDetails, gameState.holeCards);
         console.log("Win recorded before 5 cards. Sent minimal hand details and hole cards.");
       }
     } else {
       const handDetails: HandStrength = {
         type: "Won (No Cards Shown)",
-        rank: -1,
+        rank: -1, // Or some other indicator
       };
+      console.log("Index.tsx - handDetails for 'Won (No Cards Shown)':", JSON.stringify(handDetails)); // Added log
       appHandleWin(handDetails, []);
       console.warn("Win recorded, but no hole cards available for strongest hand evaluation.");
     }
@@ -298,6 +302,9 @@ const Index = ({ strongestHand, wins, losses, handleWin: appHandleWin, handleLos
             <div className="text-xs text-gray-500 font-medium">Advanced probability & insights</div>
           </div>
         </div>
+
+        {/* Current Hand Display */}
+        <CurrentHandDisplay holeCards={gameState.holeCards} communityCards={gameState.communityCards} />
 
         {/* Display Wins, Losses, and Strongest Hand */}
         <Card className="bg-white/90 border-0 shadow-lg shadow-black/3 rounded-2xl">

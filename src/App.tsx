@@ -42,7 +42,7 @@ const App = () => {
 
   useEffect(() => {
     // Load data from local storage on component mount
-    const name = localStorage.getItem("strongestHandName");
+    const handTypeNameFromStorage = localStorage.getItem("strongestHandName"); // Changed variable name for clarity
     const rankStr = localStorage.getItem("strongestHandRank");
     const cardsStr = localStorage.getItem("strongestHandActualCards");
     const primaryRankValueStr = localStorage.getItem("strongestHandPrimaryRank");
@@ -52,10 +52,11 @@ const App = () => {
     const storedWins = localStorage.getItem("wins");
     const storedLosses = localStorage.getItem("losses");
 
-    if (name && rankStr) {
+    if (handTypeNameFromStorage && rankStr) { // Use new variable name
       const rank = parseInt(rankStr, 10);
       if (!isNaN(rank)) {
-        const loadedHand: StrongestHandData = { type: name, rank: rank, name: name }; // type and name are the same here
+        // Ensure 'type' is used, 'name' is redundant if StrongestHandData extends HandStrength correctly
+        const loadedHand: StrongestHandData = { type: handTypeNameFromStorage, rank: rank };
 
         if (cardsStr) {
           try {
@@ -108,7 +109,7 @@ const App = () => {
   // Update local storage when state changes
   useEffect(() => {
     if (strongestHand !== null) {
-      localStorage.setItem("strongestHandName", strongestHand.name); // or strongestHand.type
+      localStorage.setItem("strongestHandName", strongestHand.type); // Use .type
       localStorage.setItem("strongestHandRank", strongestHand.rank.toString());
 
       if (strongestHand.cards && strongestHand.cards.length > 0) {
@@ -170,6 +171,7 @@ const App = () => {
   };
 
   const handleWin = (currentHandDetails: HandStrength, winningCards: string[]) => {
+    console.log("App.tsx handleWin - received currentHandDetails:", JSON.stringify(currentHandDetails)); // Added log
     setWins((prevWins) => prevWins + 1);
 
     if (currentHandDetails.rank === undefined || handStrengthOrder[currentHandDetails.type] === undefined) {
@@ -179,90 +181,93 @@ const App = () => {
 
     const newHandData: StrongestHandData = { ...currentHandDetails, cards: winningCards };
 
-    if (strongestHand === null || newHandData.rank > strongestHand.rank) {
-      setStrongestHand(newHandData);
-      console.log(`New strongest hand: ${newHandData.name} (Rank: ${newHandData.rank}, Cards: ${newHandData.cards?.join(', ')})`);
-    } else if (newHandData.rank === strongestHand.rank) {
+    // Directly use currentHandDetails for logging and state update
+    const handTypeForLog = currentHandDetails.type; // Assign to variable before logging
+
+    if (strongestHand === null || currentHandDetails.rank > strongestHand.rank) {
+      setStrongestHand({ ...currentHandDetails, cards: winningCards });
+      console.log(`New strongest hand: ${handTypeForLog} (Rank: ${currentHandDetails.rank}, Cards: ${winningCards?.join(', ')})`);
+    } else if (currentHandDetails.rank === strongestHand.rank) {
       let newHandIsStrongerInTie = false;
       // Implement tie-breaking logic based on hand type
-      switch (newHandData.type) {
-        case "Royal Flush": // Already highest, no tie-breaker needed beyond rank
+      switch (currentHandDetails.type) {
+        case "Royal Flush":
           break;
         case "Straight Flush":
         case "Straight":
-        case "Flush": // For flushes and straights, primaryRankValue is the high card
-          if (newHandData.primaryRankValue && strongestHand.primaryRankValue && newHandData.primaryRankValue > strongestHand.primaryRankValue) {
+        case "Flush":
+          if (currentHandDetails.primaryRankValue && strongestHand.primaryRankValue && currentHandDetails.primaryRankValue > strongestHand.primaryRankValue) {
             newHandIsStrongerInTie = true;
-          } else if (newHandData.primaryRankValue === strongestHand.primaryRankValue) {
-             // If primary high cards are same, compare all kicker cards (which are the hand cards themselves for these types)
-            if (compareKickers(newHandData.kickerRankValues, strongestHand.kickerRankValues) > 0) {
+          } else if (currentHandDetails.primaryRankValue === strongestHand.primaryRankValue) {
+            if (compareKickers(currentHandDetails.kickerRankValues, strongestHand.kickerRankValues) > 0) {
               newHandIsStrongerInTie = true;
             }
           }
           break;
         case "Four of a Kind":
-          if (newHandData.primaryRankValue && strongestHand.primaryRankValue && newHandData.primaryRankValue > strongestHand.primaryRankValue) {
+          if (currentHandDetails.primaryRankValue && strongestHand.primaryRankValue && currentHandDetails.primaryRankValue > strongestHand.primaryRankValue) {
             newHandIsStrongerInTie = true;
-          } else if (newHandData.primaryRankValue === strongestHand.primaryRankValue) {
-            if (compareKickers(newHandData.kickerRankValues, strongestHand.kickerRankValues) > 0) {
+          } else if (currentHandDetails.primaryRankValue === strongestHand.primaryRankValue) {
+            if (compareKickers(currentHandDetails.kickerRankValues, strongestHand.kickerRankValues) > 0) {
               newHandIsStrongerInTie = true;
             }
           }
           break;
         case "Full House":
-          if (newHandData.primaryRankValue && strongestHand.primaryRankValue && newHandData.primaryRankValue > strongestHand.primaryRankValue) {
+          if (currentHandDetails.primaryRankValue && strongestHand.primaryRankValue && currentHandDetails.primaryRankValue > strongestHand.primaryRankValue) {
             newHandIsStrongerInTie = true;
-          } else if (newHandData.primaryRankValue === strongestHand.primaryRankValue) {
-            if (newHandData.secondaryRankValue && strongestHand.secondaryRankValue && newHandData.secondaryRankValue > strongestHand.secondaryRankValue) {
+          } else if (currentHandDetails.primaryRankValue === strongestHand.primaryRankValue) {
+            if (currentHandDetails.secondaryRankValue && strongestHand.secondaryRankValue && currentHandDetails.secondaryRankValue > strongestHand.secondaryRankValue) {
               newHandIsStrongerInTie = true;
             }
           }
           break;
         case "Three of a Kind":
-          if (newHandData.primaryRankValue && strongestHand.primaryRankValue && newHandData.primaryRankValue > strongestHand.primaryRankValue) {
+          if (currentHandDetails.primaryRankValue && strongestHand.primaryRankValue && currentHandDetails.primaryRankValue > strongestHand.primaryRankValue) {
             newHandIsStrongerInTie = true;
-          } else if (newHandData.primaryRankValue === strongestHand.primaryRankValue) {
-            if (compareKickers(newHandData.kickerRankValues, strongestHand.kickerRankValues) > 0) {
+          } else if (currentHandDetails.primaryRankValue === strongestHand.primaryRankValue) {
+            if (compareKickers(currentHandDetails.kickerRankValues, strongestHand.kickerRankValues) > 0) {
               newHandIsStrongerInTie = true;
             }
           }
           break;
         case "Two Pair":
-          if (newHandData.primaryRankValue && strongestHand.primaryRankValue && newHandData.primaryRankValue > strongestHand.primaryRankValue) {
+          if (currentHandDetails.primaryRankValue && strongestHand.primaryRankValue && currentHandDetails.primaryRankValue > strongestHand.primaryRankValue) {
             newHandIsStrongerInTie = true;
-          } else if (newHandData.primaryRankValue === strongestHand.primaryRankValue) {
-            if (newHandData.secondaryRankValue && strongestHand.secondaryRankValue && newHandData.secondaryRankValue > strongestHand.secondaryRankValue) {
+          } else if (currentHandDetails.primaryRankValue === strongestHand.primaryRankValue) {
+            if (currentHandDetails.secondaryRankValue && strongestHand.secondaryRankValue && currentHandDetails.secondaryRankValue > strongestHand.secondaryRankValue) {
               newHandIsStrongerInTie = true;
-            } else if (newHandData.secondaryRankValue === strongestHand.secondaryRankValue) {
-              if (compareKickers(newHandData.kickerRankValues, strongestHand.kickerRankValues) > 0) {
+            } else if (currentHandDetails.secondaryRankValue === strongestHand.secondaryRankValue) {
+              if (compareKickers(currentHandDetails.kickerRankValues, strongestHand.kickerRankValues) > 0) {
                 newHandIsStrongerInTie = true;
               }
             }
           }
           break;
         case "One Pair":
-          if (newHandData.primaryRankValue && strongestHand.primaryRankValue && newHandData.primaryRankValue > strongestHand.primaryRankValue) {
+          if (currentHandDetails.primaryRankValue && strongestHand.primaryRankValue && currentHandDetails.primaryRankValue > strongestHand.primaryRankValue) {
             newHandIsStrongerInTie = true;
-          } else if (newHandData.primaryRankValue === strongestHand.primaryRankValue) {
-            if (compareKickers(newHandData.kickerRankValues, strongestHand.kickerRankValues) > 0) {
+          } else if (currentHandDetails.primaryRankValue === strongestHand.primaryRankValue) {
+            if (compareKickers(currentHandDetails.kickerRankValues, strongestHand.kickerRankValues) > 0) {
               newHandIsStrongerInTie = true;
             }
           }
           break;
         case "High Card":
-          if (compareKickers(newHandData.kickerRankValues, strongestHand.kickerRankValues) > 0) {
+          if (compareKickers(currentHandDetails.kickerRankValues, strongestHand.kickerRankValues) > 0) {
             newHandIsStrongerInTie = true;
           }
           break;
-        default: // Should not happen if hand types are well-defined
-          console.warn("Unhandled hand type in tie-breaking:", newHandData.type);
+        default:
+          console.warn("Unhandled hand type in tie-breaking:", currentHandDetails.type);
       }
 
       if (newHandIsStrongerInTie) {
-        setStrongestHand(newHandData);
-        console.log(`New strongest hand (tie-broken): ${newHandData.name} (Rank: ${newHandData.rank}, Primary: ${newHandData.primaryRankValue}, Cards: ${newHandData.cards?.join(', ')})`);
+        setStrongestHand({ ...currentHandDetails, cards: winningCards });
+        const tieBrokenHandTypeForLog = currentHandDetails.type; // Assign to variable
+        console.log(`New strongest hand (tie-broken): ${tieBrokenHandTypeForLog} (Rank: ${currentHandDetails.rank}, Primary: ${currentHandDetails.primaryRankValue}, Cards: ${winningCards?.join(', ')})`);
       } else {
-        console.log(`Current hand ${newHandData.name} (Rank: ${newHandData.rank}, Primary: ${newHandData.primaryRankValue}) is same or weaker strength as strongest hand ${strongestHand.name} (Rank: ${strongestHand.rank}, Primary: ${strongestHand.primaryRankValue}). Not updated.`);
+        console.log(`Current hand ${currentHandDetails.type} (Rank: ${currentHandDetails.rank}, Primary: ${currentHandDetails.primaryRankValue}) is same or weaker strength as strongest hand ${strongestHand.type} (Rank: ${strongestHand.rank}, Primary: ${strongestHand.primaryRankValue}). Not updated.`);
       }
     }
   };
@@ -293,8 +298,8 @@ const App = () => {
         <BrowserRouter>
           <Routes>
             {/* Pass state and update functions to Index or other relevant components */}
-            {/* For Index, we now pass strongestHand.name for display, or null */}
-            <Route path="/" element={<Index strongestHand={strongestHand ? strongestHand.name : null} wins={wins} losses={losses} handleWin={handleWin} handleLoss={handleLoss} resetAppStatistics={resetAppStatistics} />} />
+            {/* For Index, we now pass strongestHand.type for display, or null */}
+            <Route path="/" element={<Index strongestHand={strongestHand ? strongestHand.type : null} wins={wins} losses={losses} handleWin={handleWin} handleLoss={handleLoss} resetAppStatistics={resetAppStatistics} />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

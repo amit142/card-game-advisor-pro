@@ -83,15 +83,16 @@ export const evaluateHandStrength = (cards: string[]): HandStrength => {
       const flushCardRanks = cards.filter(c => c.endsWith(flushSuit)).map(c => getRankValue(c.slice(0, -1))).sort((a,b)=> b-a);
       const royalFlushRanksRequired = [14, 13, 12, 11, 10];
       if (royalFlushRanksRequired.every(rank => flushCardRanks.includes(rank))) {
-        return { type: 'Royal Flush', rank: 9, kickerRankValues: royalFlushRanksRequired };
+        const result: HandStrength = { type: 'Royal Flush', rank: 9, kickerRankValues: royalFlushRanksRequired };
+        console.log("evaluateHandStrength returning (Royal Flush):", JSON.stringify(result));
+        return result;
       }
       // Straight Flush
-      // Check for straight within the flush cards
-      let straightFlushHighCard = 0;
-      const uniqueFlushRanks = [...new Set(flushCardRanks)].sort((a,b) => b-a); // sorted high to low
-      if (uniqueFlushRanks.includes(14) && uniqueFlushRanks.includes(2) && uniqueFlushRanks.includes(3) && uniqueFlushRanks.includes(4) && uniqueFlushRanks.includes(5)) { // Ace-low SF (5 high)
-          straightFlushHighCard = 5;
-          return { type: 'Straight Flush', rank: 8, primaryRankValue: 5, kickerRankValues: [5,4,3,2,14] };
+      const uniqueFlushRanks = [...new Set(flushCardRanks)].sort((a,b) => b-a);
+      if (uniqueFlushRanks.includes(14) && uniqueFlushRanks.includes(2) && uniqueFlushRanks.includes(3) && uniqueFlushRanks.includes(4) && uniqueFlushRanks.includes(5)) {
+          const result: HandStrength = { type: 'Straight Flush', rank: 8, primaryRankValue: 5, kickerRankValues: [5,4,3,2,14] };
+          console.log("evaluateHandStrength returning (Ace-Low Straight Flush):", JSON.stringify(result));
+          return result;
       }
       for (let i = 0; i <= uniqueFlushRanks.length - 5; i++) {
           let isSf = true;
@@ -102,8 +103,10 @@ export const evaluateHandStrength = (cards: string[]): HandStrength => {
               }
           }
           if (isSf) {
-              straightFlushHighCard = uniqueFlushRanks[i];
-              return { type: 'Straight Flush', rank: 8, primaryRankValue: straightFlushHighCard, kickerRankValues: uniqueFlushRanks.slice(i, i+5) };
+              const straightFlushHighCard = uniqueFlushRanks[i];
+              const result: HandStrength = { type: 'Straight Flush', rank: 8, primaryRankValue: straightFlushHighCard, kickerRankValues: uniqueFlushRanks.slice(i, i+5) };
+              console.log("evaluateHandStrength returning (Straight Flush):", JSON.stringify(result));
+              return result;
           }
       }
     }
@@ -113,7 +116,9 @@ export const evaluateHandStrength = (cards: string[]): HandStrength => {
   const fourOfAKindRank = getTopNRanks(rankCounts, 1, 4)[0];
   if (fourOfAKindRank) {
     const kicker = getKickers(sortedRanks, [fourOfAKindRank, fourOfAKindRank, fourOfAKindRank, fourOfAKindRank], 1)[0];
-    return { type: 'Four of a Kind', rank: 7, primaryRankValue: fourOfAKindRank, kickerRankValues: kicker ? [kicker] : [] };
+    const result: HandStrength = { type: 'Four of a Kind', rank: 7, primaryRankValue: fourOfAKindRank, kickerRankValues: kicker !== undefined ? [kicker] : [] };
+    console.log("evaluateHandStrength returning (Four of a Kind):", JSON.stringify(result));
+    return result;
   }
 
   // Full House
@@ -123,8 +128,10 @@ export const evaluateHandStrength = (cards: string[]): HandStrength => {
       .filter(([r, count]) => count >= 2 && parseInt(r) !== tripletRank)
       .map(([r, _]) => parseInt(r))
       .sort((a,b) => b-a)[0];
-    if (pairRankForFullHouse) {
-      return { type: 'Full House', rank: 6, primaryRankValue: tripletRank, secondaryRankValue: pairRankForFullHouse };
+    if (pairRankForFullHouse !== undefined) { // Ensure pairRankForFullHouse is found
+      const result: HandStrength = { type: 'Full House', rank: 6, primaryRankValue: tripletRank, secondaryRankValue: pairRankForFullHouse };
+      console.log("evaluateHandStrength returning (Full House):", JSON.stringify(result));
+      return result;
     }
   }
 
@@ -133,7 +140,9 @@ export const evaluateHandStrength = (cards: string[]): HandStrength => {
     const flushSuit = Object.entries(suitCounts).find(([_, count]) => count >= 5)?.[0];
     if (flushSuit) {
       const flushCardRanks = cards.filter(c => c.endsWith(flushSuit)).map(c => getRankValue(c.slice(0, -1))).sort((a, b) => b - a).slice(0, 5);
-      return { type: 'Flush', rank: 5, kickerRankValues: flushCardRanks, primaryRankValue: flushCardRanks[0] };
+      const result: HandStrength = { type: 'Flush', rank: 5, kickerRankValues: flushCardRanks, primaryRankValue: flushCardRanks[0] };
+      console.log("evaluateHandStrength returning (Flush):", JSON.stringify(result));
+      return result;
     }
   }
 
@@ -142,12 +151,13 @@ export const evaluateHandStrength = (cards: string[]): HandStrength => {
       let straightHighCard = 0;
       let straightRanks: number[] = [];
       if (isAceLowStraight(ranks)) {
-          straightHighCard = 5; // Ace is low in A2345 straight
-          straightRanks = [5,4,3,2,14]; // Ace represented as 14 but is lowest for this straight
+          straightHighCard = 5;
+          straightRanks = [14,5,4,3,2].sort((a,b)=>b-a); // Store actual ranks, Ace as 14 for consistency
       } else {
+          // Find the highest straight from sortedRanks (which is high-to-low)
           for (let i = 0; i <= sortedRanks.length - 5; i++) {
               let isCurrentStraight = true;
-              for (let j = 0; j < 4; j++) {
+              for (let j = 0; j < 4; j++) { // Check 4 gaps
                   if (sortedRanks[i+j] - 1 !== sortedRanks[i+j+1]) {
                       isCurrentStraight = false;
                       break;
@@ -160,32 +170,42 @@ export const evaluateHandStrength = (cards: string[]): HandStrength => {
               }
           }
       }
-      return { type: 'Straight', rank: 4, primaryRankValue: straightHighCard, kickerRankValues: straightRanks };
+      const result: HandStrength = { type: 'Straight', rank: 4, primaryRankValue: straightHighCard, kickerRankValues: straightRanks };
+      console.log("evaluateHandStrength returning (Straight):", JSON.stringify(result));
+      return result;
   }
 
-  // Three of a Kind
-  if (tripletRank) { // Re-use tripletRank from Full House check
+  // Three of a Kind (if not part of a Full House)
+  if (tripletRank) {
     const kickers = getKickers(sortedRanks, [tripletRank, tripletRank, tripletRank], 2);
-    return { type: 'Three of a Kind', rank: 3, primaryRankValue: tripletRank, kickerRankValues: kickers };
+    const result: HandStrength = { type: 'Three of a Kind', rank: 3, primaryRankValue: tripletRank, kickerRankValues: kickers };
+    console.log("evaluateHandStrength returning (Three of a Kind):", JSON.stringify(result));
+    return result;
   }
 
   // Two Pair
   const twoPairRanks = getTopNRanks(rankCounts, 2, 2);
   if (twoPairRanks.length === 2) {
-    const kicker = getKickers(sortedRanks, [...twoPairRanks, ...twoPairRanks], 1)[0]; // Pass 4 used ranks
-    return { type: 'Two Pair', rank: 2, primaryRankValue: twoPairRanks[0], secondaryRankValue: twoPairRanks[1], kickerRankValues: kicker ? [kicker] : [] };
+    const kicker = getKickers(sortedRanks, [twoPairRanks[0],twoPairRanks[0], twoPairRanks[1],twoPairRanks[1]], 1)[0];
+    const result: HandStrength = { type: 'Two Pair', rank: 2, primaryRankValue: twoPairRanks[0], secondaryRankValue: twoPairRanks[1], kickerRankValues: kicker !== undefined ? [kicker] : [] };
+    console.log("evaluateHandStrength returning (Two Pair):", JSON.stringify(result));
+    return result;
   }
 
   // One Pair
   const onePairRank = getTopNRanks(rankCounts, 1, 2)[0];
   if (onePairRank) {
     const kickers = getKickers(sortedRanks, [onePairRank, onePairRank], 3);
-    return { type: 'One Pair', rank: 1, primaryRankValue: onePairRank, kickerRankValues: kickers };
+    const result: HandStrength = { type: 'One Pair', rank: 1, primaryRankValue: onePairRank, kickerRankValues: kickers };
+    console.log("evaluateHandStrength returning (One Pair):", JSON.stringify(result));
+    return result;
   }
 
   // High Card
   const highCardKickers = sortedRanks.slice(0, 5);
-  return { type: 'High Card', rank: 0, primaryRankValue: highCardKickers[0], kickerRankValues: highCardKickers };
+  const result: HandStrength = { type: 'High Card', rank: 0, primaryRankValue: highCardKickers[0], kickerRankValues: highCardKickers };
+  console.log("evaluateHandStrength returning (High Card):", JSON.stringify(result));
+  return result;
 };
 
 const calculatePreflopEquity = (holeCards: string[], opponents: number): number => {
