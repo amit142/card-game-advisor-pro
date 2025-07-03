@@ -53,17 +53,20 @@ const StatisticsDisplayDialog: React.FC<StatisticsDisplayDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] bg-white dark:bg-neutral-800">
+      {/* Increased max-width from sm:max-w-md to sm:max-w-lg */}
+      <DialogContent className="sm:max-w-lg bg-white dark:bg-neutral-800">
         <DialogHeader>
           <DialogTitle className="text-neutral-800 dark:text-neutral-100">Session Statistics</DialogTitle>
           <DialogDescription className="text-neutral-600 dark:text-neutral-300">
             Here are your statistics for the current session.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-2 items-center gap-4">
-            <span className="text-neutral-700 dark:text-neutral-200">Total Games Played:</span>
-            <span className="font-semibold text-neutral-800 dark:text-neutral-100">{totalGames}</span>
+        {/* Added wrapper for scroll */}
+        <div className="max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 items-center gap-4">
+              <span className="text-neutral-700 dark:text-neutral-200">Total Games Played:</span>
+              <span className="font-semibold text-neutral-800 dark:text-neutral-100">{totalGames}</span>
           </div>
           <div className="grid grid-cols-2 items-center gap-4">
             <span className="text-neutral-700 dark:text-neutral-200">Wins:</span>
@@ -77,13 +80,15 @@ const StatisticsDisplayDialog: React.FC<StatisticsDisplayDialogProps> = ({
             <span className="text-neutral-700 dark:text-neutral-200">Win Percentage:</span>
             <span className="font-semibold text-neutral-800 dark:text-neutral-100">{formatPercentage(winPercentage)}</span>
           </div>
-          <div className="grid grid-cols-2 items-center gap-4">
-            <span className="text-neutral-700 dark:text-neutral-200">Best Hand Achieved:</span>
-            <span className="font-semibold text-neutral-800 dark:text-neutral-100 truncate" title={getHandDisplay()}>
+          {/* Changed to flex layout for this specific row */}
+          <div className="flex flex-col sm:flex-row sm:items-start sm:gap-x-4">
+            <span className="text-neutral-700 dark:text-neutral-200 whitespace-nowrap shrink-0">Best Hand Achieved:</span>
+            <span className="font-semibold text-neutral-800 dark:text-neutral-100 break-words min-w-0 block w-full" title={getHandDisplay()}> {/* Added block w-full */}
               {getHandDisplay()}
             </span>
           </div>
-        </div>
+          </div> {/* End of the inner grid gap-4 py-4 */}
+        </div> {/* End of the scrollable wrapper */}
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" className="dark:text-neutral-100 dark:border-neutral-600 dark:hover:bg-neutral-700">
