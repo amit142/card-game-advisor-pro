@@ -74,9 +74,10 @@ interface IndexProps {
   losses: number;
   handleWin: (handDetails: HandStrength, winningCards: string[]) => void; // Expects full HandStrength object
   handleLoss: () => void;
+  resetAppStatistics: () => void; // Added prop for resetting app-level stats
 }
 
-const Index = ({ strongestHand, wins, losses, handleWin: appHandleWin, handleLoss: appHandleLoss }: IndexProps) => {
+const Index = ({ strongestHand, wins, losses, handleWin: appHandleWin, handleLoss: appHandleLoss, resetAppStatistics }: IndexProps) => {
   const [gameState, setGameState] = useState<GameState>(() => {
     const storedOpponents = localStorage.getItem('opponents');
     const initialOpponents = storedOpponents ? parseInt(storedOpponents, 10) : 2;
@@ -196,6 +197,8 @@ const Index = ({ strongestHand, wins, losses, handleWin: appHandleWin, handleLos
     setInsights([]);
     // Ensure localStorage for opponents is also updated to the default
     localStorage.setItem('opponents', '4');
+    // Call the function to reset app-level statistics
+    resetAppStatistics();
   };
 
   const handleWin = () => {

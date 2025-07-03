@@ -271,6 +271,16 @@ const App = () => {
     setLosses((prevLosses) => prevLosses + 1);
   };
 
+  const resetAppStatistics = () => {
+    setWins(0);
+    setLosses(0);
+    setStrongestHand(null); // This will trigger the useEffect to clear local storage for strongestHand
+    // Explicitly clear wins/losses from local storage if not already handled by their own useEffects on value 0
+    // localStorage.setItem("wins", "0"); // Not strictly necessary if useEffect for wins handles it
+    // localStorage.setItem("losses", "0"); // Not strictly necessary if useEffect for losses handles it
+    console.log("App statistics reset.");
+  };
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -283,7 +293,7 @@ const App = () => {
           <Routes>
             {/* Pass state and update functions to Index or other relevant components */}
             {/* For Index, we now pass strongestHand.name for display, or null */}
-            <Route path="/" element={<Index strongestHand={strongestHand ? strongestHand.name : null} wins={wins} losses={losses} handleWin={handleWin} handleLoss={handleLoss} />} />
+            <Route path="/" element={<Index strongestHand={strongestHand ? strongestHand.name : null} wins={wins} losses={losses} handleWin={handleWin} handleLoss={handleLoss} resetAppStatistics={resetAppStatistics} />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
