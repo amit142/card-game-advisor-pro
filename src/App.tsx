@@ -275,11 +275,12 @@ const App = () => {
     setWins(0);
     setLosses(0);
     setStrongestHand(null); // This will trigger the useEffect to clear local storage for strongestHand
-    // Explicitly clear wins/losses from local storage if not already handled by their own useEffects on value 0
-    // localStorage.setItem("wins", "0"); // Not strictly necessary if useEffect for wins handles it
-    // localStorage.setItem("losses", "0"); // Not strictly necessary if useEffect for losses handles it
     console.log("App statistics reset.");
   };
+
+  // Diagnostic logs
+  console.log("App.tsx strongestHand state:", strongestHand);
+  console.log("Prop value for Index (strongestHand.name or null):", strongestHand ? strongestHand.name : null);
 
   return (
     <QueryClientProvider client={queryClient}>
