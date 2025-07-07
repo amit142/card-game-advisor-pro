@@ -9,7 +9,6 @@ pipeline {
         DOCKER_IMAGE_NAME = "poker_app"
         DOCKER_IMAGE_TAG = "${BUILD_NUMBER}"
         
-        // Add PR-specific environment variables
         CHANGE_ID = "${env.CHANGE_ID ?: ''}"
         CHANGE_TARGET = "${env.CHANGE_TARGET ?: ''}"
         CHANGE_BRANCH = "${env.CHANGE_BRANCH ?: ''}"
@@ -21,7 +20,6 @@ pipeline {
         // Trigger on pushes to devops/* branches
         githubPush()
         
-        // PR triggers
         githubPullRequests(
             triggerMode: 'HEAVY_HOOKS',
             cancelQueued: true,
@@ -34,8 +32,7 @@ pipeline {
             ]
         )
         
-        // Alternative: if using multibranch pipeline, this is handled automatically
-        // pollSCM('H/5 * * * *') // Keep as fallback if needed
+       
     }
     
     options {
