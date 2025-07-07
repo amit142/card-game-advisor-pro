@@ -40,10 +40,8 @@ pipeline {
         timeout(time: 30, unit: 'MINUTES')
         timestamps()
         
-        // Add option to skip builds when only certain files change
         skipStagesAfterUnstable()
         
-        // For PR builds, you might want to skip default checkout
         skipDefaultCheckout(false)
     }
     
